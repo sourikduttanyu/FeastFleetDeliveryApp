@@ -64,7 +64,10 @@ def update_restaurants_with_schedule(restaurant_table):
         # Update DynamoDB
         table.update_item(
             Key={"restaurant_id": restaurant_id},
-            UpdateExpression="SET capacity = :capacity, hours = :hours",
+            UpdateExpression="SET #capacity = :capacity, hours = :hours",
+            ExpressionAttributeNames={
+                "#capacity": "capacity"  # Use a placeholder for the reserved keyword
+            },
             ExpressionAttributeValues={
                 ":capacity": capacity,
                 ":hours": weekly_hours
