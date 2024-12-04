@@ -93,6 +93,8 @@ def update_delivery_status(order_id, user_id, restaurant_id, new_status, timesta
                 Key={"order_id": order_id},
                 UpdateExpression="""
                     SET order_status = :status,
+                        user_id = :user
+                        restaurant_id = :restaurant
                         current_location = :location,
                         destination = :destination,
                         eta = :eta,
@@ -100,6 +102,8 @@ def update_delivery_status(order_id, user_id, restaurant_id, new_status, timesta
                 """,
                 ExpressionAttributeValues={
                     ":status": new_status,
+                    ":user": user_id,
+                    ":restaurant": restaurant_id,
                     ":location": restaurant_coordinates,  # Use restaurant coordinates as the initial location
                     ":destination": user_coordinates,  # User's address as the destination
                     ":eta": "Unknown",  # Placeholder for ETA

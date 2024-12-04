@@ -1,0 +1,183 @@
+import boto3
+import json
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+# AWS resources
+dynamodb = boto3.resource('dynamodb')
+sqs = boto3.client('sqs')
+location_client = boto3.client('location')
+
+DELIVERY_TRACKING_TABLE = "Delivery_Tracking"
+QUEUE_URL = ""
+ROUTE_CALCULATOR_NAME = ""
+
+delivery_tracking_table = dynamodb.Table(DELIVERY_TRACKING_TABLE)
+
+def lambda_handler(event, context):
+    try:
+        # Scan the Delivery Tracking Table for orders in transit
+        response = delivery_tracking_table.scan(
+            FilterExpression="order_status = :in_transit",
+            ExpressionAttributeValues={":in_transit": "OUT_FOR_DELIVERY"}
+        )
+
+        orders = response.get('Items', [])
+        for order in orders:
+            order_id = order['order_id']
+            user_id = order['user_id']
+            restaurant_id = order['restaurant_id']
+            current_location = order['current_location']
+            destination = order['destination']
+
+            print(f"Processing delivery for order_id: {order_id}, current location: {current_location}, destination: {destination}")
+
+            # Convert Decimal to float for AWS Location API
+            current_location = {
+                'lat': float(current_location['lat']),
+                'lon': float(current_location['lon'])
+            }
+            destination = {
+                'lat': float(destination['lat']),
+                'lon': float(destination['lon'])
+            }
+
+            # Calculate the next location along the route
+            next_location, eta = get_next_location(current_location, destination)
+            print(f"Order {order_id}: Next location: {next_location}, ETA: {eta}")
+
+            # Check if the order is delivered
+            if is_delivered(next_location, destination):
+                print(f"Order {order_id} has been delivered.")
+                # Push message to Q1
+                push_to_queue(order_id, user_id, restaurant_id, "DELIVERED")
+
+                # Mark order delivered and set TTL for cleanup
+                mark_order_delivered(order_id)
+            else:
+                # Update current location and ETA
+                update_current_location(order_id, next_location, eta)
+
+        return {"message": f"Processed {len(orders)} orders in transit."}
+
+    except Exception as e:
+        print(f"Error processing orders: {str(e)}")
+        raise
+
+def get_next_location(current_location, destination):
+    """
+    Calculate the next location and ETA using AWS Location Service.
+    """
+    try:
+        # Request route calculation
+        response = location_client.calculate_route(
+            CalculatorName=ROUTE_CALCULATOR_NAME,
+            DeparturePosition=[current_location['lon'], current_location['lat']],
+            DestinationPosition=[destination['lon'], destination['lat']]
+        )
+
+        # Log the raw response for debugging
+        print(f"Route calculation response: {json.dumps(response, indent=2)}")
+
+        # Check if the response contains routes
+        if 'Routes' not in response or not response['Routes']:
+            print("No routes found in response.")
+            return destination, "Unknown"
+
+        # Extract the first route and its steps
+        route = response['Routes'][0]
+        legs = route.get('Legs', [])
+        if not legs or not legs[0]['Steps']:
+            print("No steps found in the route legs.")
+            return destination, "Unknown"
+
+        # Get the next step's end location
+        next_step = legs[0]['Steps'][0]
+        next_location = {
+            'lat': Decimal(next_step['EndPosition'][1]),
+            'lon': Decimal(next_step['EndPosition'][0])
+        }
+
+        # Get ETA in seconds
+        eta_seconds = route.get('DurationSeconds', 0)
+        eta_time = (datetime.utcnow() + timedelta(seconds=eta_seconds)).strftime('%H:%M')
+
+        return next_location, eta_time
+
+    except Exception as e:
+        print(f"Error calculating route: {str(e)}")
+        return destination, "Unknown"
+
+
+def is_delivered(current_location, destination):
+    """
+    Checks if the current location matches the destination.
+    """
+    return (
+        Decimal(current_location['lat']) == Decimal(destination['lat']) and
+        Decimal(current_location['lon']) == Decimal(destination['lon'])
+    )
+
+def push_to_queue(order_id, user_id, restaurant_id, status):
+    """
+    Pushes a delivered status message to SQS.
+    """
+    sqs_message = {
+        'order_id': order_id,
+        'user_id': user_id,
+        'restaurant_id': restaurant_id,
+        'status': status,
+        'timestamp': datetime.utcnow().isoformat()
+    }
+    try:
+        sqs.send_message(
+            QueueUrl=QUEUE_URL,
+            MessageBody=json.dumps(sqs_message)
+        )
+        print(f"Pushed message to Q1: {sqs_message}")
+    except Exception as e:
+        print(f"Error pushing message to Q1 for order {order_id}: {str(e)}")
+        raise
+
+def mark_order_delivered(order_id):
+    """
+    Marks the order as delivered by adding a TTL to the record for automatic deletion.
+    """
+    try:
+        # Calculate TTL as the current timestamp + 7 days (in seconds)
+        ttl_timestamp = int((datetime.utcnow() + timedelta(days=7)).timestamp())
+
+        # Update the delivery tracking table to include TTL
+        delivery_tracking_table.update_item(
+            Key={"order_id": order_id},
+            UpdateExpression="SET #ttl_attr = :ttl_value",
+            ExpressionAttributeNames={"#ttl_attr": "ttl"},  # Alias for 'ttl'
+            ExpressionAttributeValues={":ttl_value": ttl_timestamp}
+        )
+        print(f"Marked order {order_id} as delivered and added TTL.")
+    except ClientError as e:
+        print(f"Error marking order {order_id} as delivered: {e.response['Error']['Message']}")
+        raise
+
+def update_current_location(order_id, next_location, eta):
+    """
+    Updates the current location and ETA of the order in transit.
+    """
+    try:
+        delivery_tracking_table.update_item(
+            Key={"order_id": order_id},
+            UpdateExpression="""
+                SET current_location = :location,
+                    eta = :eta,
+                    last_updated = :timestamp
+            """,
+            ExpressionAttributeValues={
+                ":location": next_location,
+                ":eta": Decimal(eta),
+                ":timestamp": datetime.utcnow().isoformat()
+            }
+        )
+        print(f"Updated location for order {order_id} to {next_location}, ETA: {eta}")
+    except Exception as e:
+        print(f"Error updating location for order {order_id}: {str(e)}")
+        raise
