@@ -1,0 +1,98 @@
+import boto3
+import json
+from datetime import datetime
+
+# AWS resources
+dynamodb = boto3.resource('dynamodb')
+sqs = boto3.client('sqs')
+
+ORDER_TABLE = "Order"
+QUEUE_URL = ""
+
+order_table = dynamodb.Table(ORDER_TABLE)
+
+# Order status sequence
+ORDER_STATUSES = ["PLACED", "PREPARING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY"]
+
+def lambda_handler(event, context):
+    try:
+        # Scan the Order Table for orders not yet in "OUT_FOR_DELIVERY" or "DELIVERED"
+        response = order_table.scan(
+            FilterExpression="NOT (#s IN (:status1, :status2))",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":status1": "OUT_FOR_DELIVERY", ":status2": "DELIVERED"}
+        )
+
+        # Process each order
+        orders = response.get('Items', [])
+        for order in orders:
+            order_id = order["order_id"]
+            current_status = order["status"]
+            user_id = order["user_id"]
+            restaurant_id = order["restaurant_id"]  # Fetch the restaurant ID from the order
+
+            next_status = get_next_status(current_status)
+            if not next_status:
+                print(f"Order {order_id} is already at its final stage before delivery.")
+                continue
+
+            # Update the order status in the Order Table
+            update_order_status(order_id, next_status)
+
+            # Push the updated status to the SQS queue
+            push_to_queue(order_id, user_id, restaurant_id, next_status)
+
+        return {
+            "message": f"Processed {len(orders)} orders.",
+            "processed_orders": [order["order_id"] for order in orders]
+        }
+
+    except Exception as e:
+        print(f"Error processing orders: {str(e)}")
+        raise
+
+
+def get_next_status(current_status):
+    """
+    Determines the next status in the order lifecycle.
+    """
+    if current_status in ORDER_STATUSES:
+        current_index = ORDER_STATUSES.index(current_status)
+        if current_index < len(ORDER_STATUSES) - 1:
+            return ORDER_STATUSES[current_index + 1]
+    return None
+
+
+def update_order_status(order_id, new_status):
+    """
+    Updates the status of an order in the Order Table.
+    """
+    timestamp = datetime.utcnow().isoformat()
+    order_table.update_item(
+        Key={"order_id": order_id},
+        UpdateExpression="SET #s = :new_status, #ts = :timestamp",
+        ExpressionAttributeNames={"#s": "status", "#ts": "timestamp"},
+        ExpressionAttributeValues={":new_status": new_status, ":timestamp": timestamp}
+    )
+    print(f"Updated order {order_id} to status {new_status}.")
+
+
+def push_to_queue(order_id, user_id, restaurant_id, new_status):
+    """
+    Pushes the updated order status to SQS.
+    """
+    message = {
+        "order_id": order_id,
+        "user_id": user_id,
+        "restaurant_id": restaurant_id,  # Include restaurant_id in the message
+        "status": new_status,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    try:
+        sqs.send_message(
+            QueueUrl=QUEUE_URL,
+            MessageBody=json.dumps(message),
+        )
+        print(f"Pushed updated status of order {order_id} to queue: {new_status}")
+    except Exception as e:
+        print(f"Error pushing order {order_id} to queue: {str(e)}")
