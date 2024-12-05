@@ -93,8 +93,8 @@ def update_delivery_status(order_id, user_id, restaurant_id, new_status, timesta
                 Key={"order_id": order_id},
                 UpdateExpression="""
                     SET order_status = :status,
-                        user_id = :user
-                        restaurant_id = :restaurant
+                        user_id = :user,
+                        restaurant_id = :restaurant,
                         current_location = :location,
                         destination = :destination,
                         eta = :eta,
