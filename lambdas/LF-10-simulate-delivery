@@ -55,7 +55,7 @@ def lambda_handler(event, context):
                     STEPS_TO_COMPLETE
                 )
 
-                remaining_steps = STEPS_TO_COMPLETE - current_step
+                remaining_steps = STEPS_TO_COMPLETE - (current_step + 1)
                 update_current_location(order_id, next_location, remaining_steps, current_step + 1)
 
                 # Mark as delivered if this was the final step
