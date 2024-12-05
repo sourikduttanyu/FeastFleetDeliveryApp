@@ -11,6 +11,7 @@ location_client = boto3.client('location')
 DELIVERY_TRACKING_TABLE = "Delivery_Tracking"
 QUEUE_URL = ""
 ROUTE_CALCULATOR_NAME = ""
+STEPS_TO_COMPLETE = 5  # Number of steps to complete delivery
 
 delivery_tracking_table = dynamodb.Table(DELIVERY_TRACKING_TABLE)
 
@@ -29,34 +30,43 @@ def lambda_handler(event, context):
             restaurant_id = order['restaurant_id']
             current_location = order['current_location']
             destination = order['destination']
+            current_step = int(order.get('current_step', 0))
+            route_steps = order.get('route_steps', [])
 
-            print(f"Processing delivery for order_id: {order_id}, current location: {current_location}, destination: {destination}")
+            print(f"Processing delivery for order_id: {order_id}, step {current_step} of {STEPS_TO_COMPLETE}")
 
-            # Convert Decimal to float for AWS Location API
-            current_location = {
-                'lat': float(current_location['lat']),
-                'lon': float(current_location['lon'])
-            }
-            destination = {
-                'lat': float(destination['lat']),
-                'lon': float(destination['lon'])
-            }
+            # Calculate the route if not already calculated
+            if not route_steps:
+                route_steps = calculate_route_steps(current_location, destination)
+                if not route_steps:
+                    print(f"No route found for order {order_id}. Skipping.")
+                    continue
+                
+                # Divide the route into equal segments
+                simplified_steps = simplify_route(route_steps, STEPS_TO_COMPLETE)
+                update_route_steps(order_id, simplified_steps)
+                route_steps = simplified_steps
 
-            # Calculate the next location along the route
-            next_location, eta = get_next_location(current_location, destination)
-            print(f"Order {order_id}: Next location: {next_location}, ETA: {eta}")
+            # Move to next step if not at destination
+            if current_step < STEPS_TO_COMPLETE:
+                next_location = interpolate_position(
+                    route_steps,
+                    current_step,
+                    STEPS_TO_COMPLETE
+                )
+                
+                # Calculate ETA based on remaining steps
+                remaining_steps = STEPS_TO_COMPLETE - current_step
+                eta_minutes = remaining_steps * 5  # Assume 5 minutes per step
+                eta_time = (datetime.utcnow() + timedelta(minutes=eta_minutes)).strftime('%H:%M')
 
-            # Check if the order is delivered
-            if is_delivered(next_location, destination):
-                print(f"Order {order_id} has been delivered.")
-                # Push message to Q1
-                push_to_queue(order_id, user_id, restaurant_id, "DELIVERED")
+                update_current_location(order_id, next_location, eta_time, current_step + 1)
 
-                # Mark order delivered and set TTL for cleanup
-                mark_order_delivered(order_id)
-            else:
-                # Update current location and ETA
-                update_current_location(order_id, next_location, eta)
+                # Mark as delivered if this was the final step
+                if current_step == STEPS_TO_COMPLETE - 1:
+                    print(f"Order {order_id} has been delivered.")
+                    push_to_queue(order_id, user_id, restaurant_id, "DELIVERED")
+                    mark_order_delivered(order_id)
 
         return {"message": f"Processed {len(orders)} orders in transit."}
 
@@ -64,59 +74,136 @@ def lambda_handler(event, context):
         print(f"Error processing orders: {str(e)}")
         raise
 
-def get_next_location(current_location, destination):
+def simplify_route(route_steps, num_steps):
     """
-    Calculate the next location and ETA using AWS Location Service.
+    Simplify the route into the desired number of steps.
+    """
+    if not route_steps:
+        return []
+
+    # For a single route step, create intermediate points
+    start_pos = route_steps[0]["StartPosition"]
+    end_pos = route_steps[0]["EndPosition"]
+    total_distance = route_steps[0]["Distance"]
+    
+    simplified = []
+    for i in range(num_steps):
+        progress = float(i) / float(num_steps)  # Convert to float for calculations
+        interpolated_position = [
+            Decimal(str(float(start_pos[0]) + (float(end_pos[0]) - float(start_pos[0])) * progress)),
+            Decimal(str(float(start_pos[1]) + (float(end_pos[1]) - float(start_pos[1])) * progress))
+        ]
+        next_progress = float(i + 1) / float(num_steps)
+        next_position = [
+            Decimal(str(float(start_pos[0]) + (float(end_pos[0]) - float(start_pos[0])) * next_progress)),
+            Decimal(str(float(start_pos[1]) + (float(end_pos[1]) - float(start_pos[1])) * next_progress))
+        ]
+        
+        # Convert all numerical values to Decimal for DynamoDB
+        simplified.append({
+            "StartPosition": interpolated_position,
+            "EndPosition": next_position,
+            "Distance": Decimal(str(float(total_distance) / float(num_steps))),
+            "DurationSeconds": Decimal(str(float(route_steps[0]["DurationSeconds"]) / float(num_steps)))
+        })
+    
+    return simplified
+
+def calculate_route_steps(current_location, destination):
+    """
+    Calculate the full route steps using AWS Location Service.
     """
     try:
-        # Request route calculation
-        response = location_client.calculate_route(
-            CalculatorName=ROUTE_CALCULATOR_NAME,
-            DeparturePosition=[current_location['lon'], current_location['lat']],
-            DestinationPosition=[destination['lon'], destination['lat']]
-        )
-
-        # Log the raw response for debugging
-        print(f"Route calculation response: {json.dumps(response, indent=2)}")
-
-        # Check if the response contains routes
-        if 'Routes' not in response or not response['Routes']:
-            print("No routes found in response.")
-            return destination, "Unknown"
-
-        # Extract the first route and its steps
-        route = response['Routes'][0]
-        legs = route.get('Legs', [])
-        if not legs or not legs[0]['Steps']:
-            print("No steps found in the route legs.")
-            return destination, "Unknown"
-
-        # Get the next step's end location
-        next_step = legs[0]['Steps'][0]
-        next_location = {
-            'lat': Decimal(next_step['EndPosition'][1]),
-            'lon': Decimal(next_step['EndPosition'][0])
+        # Convert Decimal to float for AWS Location Service
+        current_location_float = {
+            "lon": float(current_location['lon']),
+            "lat": float(current_location['lat'])
+        }
+        destination_float = {
+            "lon": float(destination['lon']),
+            "lat": float(destination['lat'])
         }
 
-        # Get ETA in seconds
-        eta_seconds = route.get('DurationSeconds', 0)
-        eta_time = (datetime.utcnow() + timedelta(seconds=eta_seconds)).strftime('%H:%M')
+        response = location_client.calculate_route(
+            CalculatorName=ROUTE_CALCULATOR_NAME,
+            DeparturePosition=[current_location_float['lon'], current_location_float['lat']],
+            DestinationPosition=[destination_float['lon'], destination_float['lat']]
+        )
 
-        return next_location, eta_time
+        # Extract just the start and end positions from the route and convert to Decimal
+        if 'Legs' in response and response['Legs']:
+            route_leg = response['Legs'][0]
+            return [{
+                "StartPosition": [Decimal(str(x)) for x in route_leg['StartPosition']],
+                "EndPosition": [Decimal(str(x)) for x in route_leg['EndPosition']],
+                "Distance": Decimal(str(route_leg['Distance'])),
+                "DurationSeconds": Decimal(str(route_leg['DurationSeconds']))
+            }]
+        
+        print("No valid route found.")
+        return []
 
     except Exception as e:
-        print(f"Error calculating route: {str(e)}")
-        return destination, "Unknown"
+        print(f"Error calculating route steps: {str(e)}")
+        return []
+
+def interpolate_position(route_steps, current_step, total_steps):
+    """
+    Calculate the next position based on the current step.
+    """
+    if not route_steps or current_step >= len(route_steps):
+        return None
+
+    next_position = route_steps[current_step]["EndPosition"]
+    return {
+        'lat': next_position[1],  # Already in Decimal format from simplify_route
+        'lon': next_position[0]   # Already in Decimal format from simplify_route
+    }
+
+def update_route_steps(order_id, route_steps):
+    """
+    Store the calculated route steps in the delivery tracking table.
+    """
+    try:
+        delivery_tracking_table.update_item(
+            Key={"order_id": order_id},
+            UpdateExpression="SET route_steps = :steps, current_step = :step",
+            ExpressionAttributeValues={
+                ":steps": route_steps,
+                ":step": 0
+            }
+        )
+        print(f"Route steps stored for order {order_id}.")
+    except Exception as e:
+        print(f"Error updating route steps for order {order_id}: {str(e)}")
+        raise
 
 
-def is_delivered(current_location, destination):
+def update_current_location(order_id, next_location, eta, next_step):
     """
-    Checks if the current location matches the destination.
+    Updates the current location, ETA, and step progress in the delivery tracking table.
     """
-    return (
-        Decimal(current_location['lat']) == Decimal(destination['lat']) and
-        Decimal(current_location['lon']) == Decimal(destination['lon'])
-    )
+    try:
+        delivery_tracking_table.update_item(
+            Key={"order_id": order_id},
+            UpdateExpression="""
+                SET current_location = :location,
+                    eta = :eta,
+                    current_step = :next_step,
+                    last_updated = :timestamp
+            """,
+            ExpressionAttributeValues={
+                ":location": next_location,
+                ":eta": eta,
+                ":next_step": next_step,
+                ":timestamp": datetime.utcnow().isoformat()
+            }
+        )
+        print(f"Order {order_id}: Updated location to {next_location}, ETA: {eta}, Step: {next_step}")
+    except Exception as e:
+        print(f"Error updating location for order {order_id}: {str(e)}")
+        raise
+
 
 def push_to_queue(order_id, user_id, restaurant_id, status):
     """
@@ -139,13 +226,13 @@ def push_to_queue(order_id, user_id, restaurant_id, status):
         print(f"Error pushing message to Q1 for order {order_id}: {str(e)}")
         raise
 
+
 def mark_order_delivered(order_id):
     """
     Marks the order as delivered by adding a TTL to the record for automatic deletion.
     """
     try:
-        # Calculate TTL as the current timestamp + 7 days (in seconds)
-        ttl_timestamp = int((datetime.utcnow() + timedelta(days=7)).timestamp())
+        ttl_timestamp = int((datetime.utcnow() + timedelta(days=1)).timestamp())
 
         # Update the delivery tracking table to include TTL
         delivery_tracking_table.update_item(
@@ -157,27 +244,4 @@ def mark_order_delivered(order_id):
         print(f"Marked order {order_id} as delivered and added TTL.")
     except ClientError as e:
         print(f"Error marking order {order_id} as delivered: {e.response['Error']['Message']}")
-        raise
-
-def update_current_location(order_id, next_location, eta):
-    """
-    Updates the current location and ETA of the order in transit.
-    """
-    try:
-        delivery_tracking_table.update_item(
-            Key={"order_id": order_id},
-            UpdateExpression="""
-                SET current_location = :location,
-                    eta = :eta,
-                    last_updated = :timestamp
-            """,
-            ExpressionAttributeValues={
-                ":location": next_location,
-                ":eta": Decimal(eta),
-                ":timestamp": datetime.utcnow().isoformat()
-            }
-        )
-        print(f"Updated location for order {order_id} to {next_location}, ETA: {eta}")
-    except Exception as e:
-        print(f"Error updating location for order {order_id}: {str(e)}")
         raise
