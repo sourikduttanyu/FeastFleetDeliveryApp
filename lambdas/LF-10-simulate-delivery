@@ -11,7 +11,7 @@ location_client = boto3.client('location')
 DELIVERY_TRACKING_TABLE = "Delivery_Tracking"
 QUEUE_URL = ""
 ROUTE_CALCULATOR_NAME = ""
-STEPS_TO_COMPLETE = 5  # Number of steps to complete delivery
+STEPS_TO_COMPLETE = 3  # Number of steps to complete delivery
 
 delivery_tracking_table = dynamodb.Table(DELIVERY_TRACKING_TABLE)
 
@@ -54,13 +54,9 @@ def lambda_handler(event, context):
                     current_step,
                     STEPS_TO_COMPLETE
                 )
-                
-                # Calculate ETA based on remaining steps
-                remaining_steps = STEPS_TO_COMPLETE - current_step
-                eta_minutes = remaining_steps * 5  # Assume 5 minutes per step
-                eta_time = (datetime.utcnow() + timedelta(minutes=eta_minutes)).strftime('%H:%M')
 
-                update_current_location(order_id, next_location, eta_time, current_step + 1)
+                remaining_steps = STEPS_TO_COMPLETE - current_step
+                update_current_location(order_id, next_location, remaining_steps, current_step + 1)
 
                 # Mark as delivered if this was the final step
                 if current_step == STEPS_TO_COMPLETE - 1:
@@ -179,31 +175,34 @@ def update_route_steps(order_id, route_steps):
         raise
 
 
-def update_current_location(order_id, next_location, eta, next_step):
+def update_current_location(order_id, next_location, remaining_steps, next_step):
     """
-    Updates the current location, ETA, and step progress in the delivery tracking table.
+    Updates the current location, waiting time (stored in eta field), and step progress in the delivery tracking table.
     """
     try:
+        # Calculate waiting time (5 minutes per remaining step)
+        waiting_minutes = remaining_steps * 5
+        waiting_time = f"{waiting_minutes} minutes"
+        
         delivery_tracking_table.update_item(
             Key={"order_id": order_id},
             UpdateExpression="""
                 SET current_location = :location,
-                    eta = :eta,
+                    eta = :waiting_time,
                     current_step = :next_step,
                     last_updated = :timestamp
             """,
             ExpressionAttributeValues={
                 ":location": next_location,
-                ":eta": eta,
+                ":waiting_time": waiting_time,
                 ":next_step": next_step,
                 ":timestamp": datetime.utcnow().isoformat()
             }
         )
-        print(f"Order {order_id}: Updated location to {next_location}, ETA: {eta}, Step: {next_step}")
+        print(f"Order {order_id}: Updated location to {next_location}, Waiting time: {waiting_time}, Step: {next_step}")
     except Exception as e:
         print(f"Error updating location for order {order_id}: {str(e)}")
         raise
-
 
 def push_to_queue(order_id, user_id, restaurant_id, status):
     """
