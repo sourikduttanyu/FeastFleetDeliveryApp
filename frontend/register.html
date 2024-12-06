@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Feast Fleet</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Feast Fleet</h1>
+        <nav>
+            <a href="login.html" class="basket">Login</a>
+        </nav>
+    </header>
+
+    <div class="content register-container">
+        <div class="image-section">
+            <img src="images\fastfood.png" alt="Food Illustration">
+        </div>
+        <div class="form-section">
+            <h2>Welcome! <br> Please Register</h2>
+            <!-- Error message section -->
+            <div class="error-message" id="register-error">
+                <!-- Error messages will appear here dynamically -->
+            </div>
+            <form action="/register" method="post" class="register-form">
+                <input type="email" name="email" placeholder="Email Address" required>
+                <input type="text" name="first_name" placeholder="First Name" required>
+                <input type="text" name="last_name" placeholder="Last Name" required>
+                <input type="tel" name="phone" placeholder="Phone Number" required>
+                <input type="text" name="address" placeholder="Address" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+                <button type="submit" class="basket">Register</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

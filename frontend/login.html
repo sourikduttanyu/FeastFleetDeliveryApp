@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Feast Fleet</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Feast Fleet</h1>
+        <nav>
+            <a href="register.html" class="basket">Create Account</a>
+        </nav>
+    </header>
+
+    <div class="content login-container">
+        <div class="image-section">
+            <img src="images\fastfood.png" alt="Food Illustration">
+        </div>
+        <div class="form-section">
+            <h2>Welcome! <br> Please Login</h2>
+            <!-- Error message section -->
+            <div class="error-message" id="login-error">
+                <!-- Error messages will appear here dynamically -->
+            </div>
+            <form action="/login" method="post" class="login-form">
+                <input type="email" name="email" placeholder="Email Address" required>
+                <input type="password" name="password" placeholder="Password" required>
+                <button type="submit" class="basket">Login</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
