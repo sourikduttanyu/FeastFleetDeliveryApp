@@ -1,0 +1,91 @@
+/* Order Detail Page Specific Styles */
+.order-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.status-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    background-color: #556B2F;
+    color: white;
+}
+
+.order-details, 
+.restaurant-details, 
+.delivery-tracking {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.order-items {
+    list-style: none;
+    padding: 0;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.total-price {
+    margin-top: 20px;
+    text-align: right;
+    font-size: 1.2em;
+}
+
+#map {
+    height: 300px;
+    width: 100%;
+    background-color: #eee;
+    margin: 20px 0;
+    border-radius: 8px;
+}
+
+/* Status badge colors */
+.status-badge.placed {
+    background-color: #FFB347;
+}
+
+.status-badge.preparing {
+    background-color: #4169E1;
+}
+
+.status-badge.out-for-delivery {
+    background-color: #556B2F;
+}
+
+.status-badge.delivered {
+    background-color: #228B22;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .order-container {
+        margin: 10px;
+        padding: 10px;
+    }
+
+    .order-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+
+    #map {
+        height: 200px;
+    }
+}
