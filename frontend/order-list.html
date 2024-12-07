@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders - Feast Fleet</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/order-list.css">
+</head>
+<body>
+    <header>
+        <h1>Feast Fleet</h1>
+        <nav>
+            <a href="#">Search</a>
+            <a href="#">Reservations</a>
+            <a href="#">Orders</a>
+            <a href="#">My Profile</a>
+            <a href="#" class="basket">Basket</a>
+        </nav>
+    </header>
+
+    <main class="orders-container">
+        <section class="current-orders">
+            <h2>Current Orders</h2>
+            <div class="order-cards" id="currentOrders">
+                <!-- Order cards will be populated dynamically -->
+                <div class="order-card">
+                    <div class="order-info">
+                        <h3>Restaurant Name</h3>
+                        <p class="order-details">3 items | $45</p>
+                        <p class="order-time">Ordered on Dec 5</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="history-orders">
+            <h2>History Orders</h2>
+            <div class="order-cards" id="historyOrders">
+                <!-- Historical order cards will be populated dynamically -->
+                <div class="order-card">
+                    <div class="order-info">
+                        <h3>Restaurant Name</h3>
+                        <p class="order-details">2 items | $45</p>
+                        <p class="order-time">Delivered on Dec 4</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/order-list.js"></script>
+</body>
+</html>

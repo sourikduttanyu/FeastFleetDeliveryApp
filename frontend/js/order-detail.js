@@ -8,7 +8,12 @@ async function fetchOrderDetails() {
             return;
         }
 
-        const response = await fetch(`[YOUR_API_GATEWAY_URL]/view-order?order_id=${orderId}`);
+        const response = await fetch(`https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/orders/${orderId}`, {
+            headers: {
+                'Authorization': token
+            }
+        });
+
         const data = await response.json();
 
         // Update order header section
