@@ -22,6 +22,15 @@ header h1 {
     color: #556B2F; /* Olive green */
 }
 
+header h1 a {
+    text-decoration: none; /* Remove underline */
+    color: inherit;        /* Use the same color as the parent <h1> */
+}
+
+header h1 a:hover {
+    text-decoration: underline; /* Optional: Add underline on hover */
+}
+
 header nav a {
     margin: 0 10px;
     text-decoration: none;

@@ -8,17 +8,7 @@
     <link rel="stylesheet" href="css/order-list.css">
 </head>
 <body>
-    <header>
-        <h1>Feast Fleet</h1>
-        <nav>
-            <a href="#">Search</a>
-            <a href="#">Reservations</a>
-            <a href="#">Orders</a>
-            <a href="#">My Profile</a>
-            <a href="#" class="basket">Basket</a>
-        </nav>
-    </header>
-
+    <div id="navbar"></div>
     <main class="orders-container">
         <section class="current-orders">
             <h2>Current Orders</h2>
@@ -36,5 +26,16 @@
     </main>
 
     <script src="js/order-list.js"></script>
+    <script>
+        // Load the navbar from navbar.html
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('navbar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('navbar').innerHTML = data;
+                })
+                .catch(error => console.error('Error loading navbar:', error));
+        });
+    </script>    
 </body>
 </html>
