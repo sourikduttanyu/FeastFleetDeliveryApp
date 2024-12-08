@@ -4,19 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feast Fleet - Upload Image</title>
+    <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/upload-image.css">
 </head>
 <body>
-    <header>
-        <h1>Feast Fleet</h1>
-        <nav>
-            <a href="index.html">Search</a>
-            <a href="#reservations">Reservations</a>
-            <a href="#orders">Orders</a>
-            <a href="#profile">My Profile</a>
-            <a href="#basket" class="basket">Basket (3)</a>
-        </nav>
-    </header>
+    <div id="navbar"></div>
     <main class="content">
         <h2>Upload Image and Get Suggestions</h2>
         <div class="upload-container">
@@ -27,8 +19,16 @@
         </div>
         <button class="upload-button">Upload the Image →</button>
     </main>
-    <footer>
-        <p>&copy; 2024 Feast Fleet. All rights reserved.</p>
-    </footer>
+    <script>
+        // Load the navbar from navbar.html
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('navbar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('navbar').innerHTML = data;
+                })
+                .catch(error => console.error('Error loading navbar:', error));
+        });
+    </script>
 </body>
 </html>
