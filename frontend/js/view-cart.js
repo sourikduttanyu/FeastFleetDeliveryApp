@@ -48,10 +48,58 @@ async function getCartContent(userId) {
         <h3>Order summary</h3>
           <p>Subtotal: ${cart.total_price}</p>
           <p><strong>Total: ${cart.total_price }</strong></p>
-          <button>Continue to payment</button>`;
+          <button id="placeOrderBtn">Continue to payment</button>`;
         
-        
+        document.getElementById('placeOrderBtn').addEventListener('click', () => {
+            placeOrder(cart);
+        });
     } catch (error) {
         console.error('Error:', error);
+    }
+}
+async function placeOrder(cartContent) {
+    try {
+        const requestBody = {
+            resource: "/place-order",
+            path: "/place-order",
+            httpMethod: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            requestContext: {
+                authorizer: {
+                    claims: {
+                        sub: "test123" // Replace with dynamic user information if available
+                    }
+                }
+            },
+            body: JSON.stringify({
+                restaurant_id: cartContent.restaurant_id,
+                items: cartContent.item_list.map(item => ({
+                    item_id: item.item_id,
+                    quantity: item.item_quantity
+                })),
+                total_price: cartContent.total_price
+            })
+        };
+
+        const response = await fetch('https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/orders', { // Replace with your actual API endpoint
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to place order. Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Order placed successfully:', result);
+        alert('Order placed successfully!');
+    } catch (error) {
+        console.error('Error placing order:', error);
+        alert('Failed to place order. Please try again.');
     }
 }
