@@ -6,6 +6,26 @@
     <title>Feast Fleet - Upload Image</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/upload-image.css">
+    <style>
+        .upload-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed #ccc;
+            width: 200px;
+            height: 200px;
+            position: relative;
+            cursor: pointer;
+        }
+        .hidden-input {
+            display: none;
+        }
+        .upload-box img {
+            max-width: 100%;
+            max-height: 100%;
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div id="navbar"></div>
@@ -14,6 +34,7 @@
         <div class="upload-container">
             <label for="imageUpload" class="upload-box">
                 <span class="upload-icon">+</span>
+                <img id="previewImage" alt="Uploaded Image Preview">
             </label>
             <input type="file" id="imageUpload" class="hidden-input" accept="image/*">
         </div>
@@ -28,6 +49,24 @@
                     document.getElementById('navbar').innerHTML = data;
                 })
                 .catch(error => console.error('Error loading navbar:', error));
+        });
+
+        // Show image preview
+        const imageUpload = document.getElementById('imageUpload');
+        const previewImage = document.getElementById('previewImage');
+        const uploadIcon = document.querySelector('.upload-icon');
+
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    previewImage.src = reader.result;
+                    previewImage.style.display = 'block';
+                    uploadIcon.style.display = 'none'; // Hide the plus icon
+                };
+                reader.readAsDataURL(file);
+            }
         });
     </script>
 </body>
