@@ -1,75 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Feast Fleet</title>
-    <link rel="stylesheet" href="css/main.css">
-</head>
-<body>
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
+  <body>
     <div id="navbar"></div>
     <main class="content">
-        <img src="images\pngwing.com.png" alt="Illustration of pizza and computers">
-        <div>
-            <input type="text" placeholder="Current Location">
-            <input type="text" placeholder="Enter Key words....">
-            <button>🔍</button>
-        </div>
-        <div class="categories">
-            <!-- Italian Button -->
-            <button class="category">
-                <img src="images/icons/Fast-Food-Pizza--Streamline-Ultimate.png" alt="Pizza Icon">
-                <span>Italian</span>
-            </button>
-            
-            <!-- Thai Button -->
-            <button class="category">
-                <img src="images/icons/Asian-Food-Soup--Streamline-Ultimate.png" alt="Soup Icon">
-                <span>Thai</span>
-            </button>
-            
-            <!-- American Button -->
-            <button class="category">
-                <img src="images/icons/Fast-Food-Burger--Streamline-Ultimate.png" alt="Burger Icon">
-                <span>American</span>
-            </button>
-            
-            <!-- Japanese Button -->
-            <button class="category">
-                <img src="images/icons/Seafood-Sushi--Streamline-Ultimate.png" alt="Sushi Icon">
-                <span>Japanese</span>
-            </button>
-            
-            <!-- Mexican Button -->
-            <button class="category">
-                <img src="images/icons/Fast-Food-Wrap--Streamline-Ultimate.png" alt="Wrap Icon">
-                <span>Mexican</span>
-            </button>
-            
-            <!-- Vegetarian Button -->
-            <button class="category">
-                <img src="images/icons/Vegetables-Broccoli--Streamline-Ultimate.png" alt="Broccoli Icon">
-                <span>Vegetarian</span>
-            </button>
-        </div>        
+      <img
+        src="images\pngwing.com.png"
+        alt="Illustration of pizza and computers"
+      />
+      <div>
+        <input type="text" placeholder="Current Location" />
+        <input type="text" placeholder="Enter Key words...." />
+        <button>🔍</button>
+      </div>
+      <div class="categories">
+        <!-- Italian Button -->
+        <button class="category" value="italian" data-category="Italian">
+          <img
+            src="images/icons/Fast-Food-Pizza--Streamline-Ultimate.png"
+            alt="Pizza Icon"
+          />
+          <span>Italian</span>
+        </button>
+
+        <!-- Thai Button -->
+        <button class="category" value="thai" data-category="Thai">
+          <img
+            src="images/icons/Asian-Food-Soup--Streamline-Ultimate.png"
+            alt="Soup Icon"
+          />
+          <span>Thai</span>
+        </button>
+
+        <!-- American Button -->
+        <button class="category" value="american" data-category="American">
+          <img
+            src="images/icons/Fast-Food-Burger--Streamline-Ultimate.png"
+            alt="Burger Icon"
+          />
+          <span>American</span>
+        </button>
+
+        <!-- Japanese Button -->
+        <button class="category" value="japanese" data-category="Japanese">
+          <img
+            src="images/icons/Seafood-Sushi--Streamline-Ultimate.png"
+            alt="Sushi Icon"
+          />
+          <span>Japanese</span>
+        </button>
+
+        <!-- Mexican Button -->
+        <button class="category" value="mexican" data-category="Mexican">
+          <img
+            src="images/icons/Fast-Food-Wrap--Streamline-Ultimate.png"
+            alt="Wrap Icon"
+          />
+          <span>Mexican</span>
+        </button>
+
+        <!-- Vegetarian Button -->
+        <button class="category" value="vegetarian" data-category="Vegetarian">
+          <img
+            src="images/icons/Vegetables-Broccoli--Streamline-Ultimate.png"
+            alt="Broccoli Icon"
+          />
+          <span>Vegetarian</span>
+        </button>
+      </div>
     </main>
-    <script>
-        // Load the navbar from navbar.html
-        document.addEventListener('DOMContentLoaded', () => {
-            fetch('navbar.html')
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('navbar').innerHTML = data;
-    
-                    // Initialize navbar logic after it's added to the DOM
-                    const navbarScript = document.createElement('script');
-                    navbarScript.src = 'js/navbar.js';
-                    navbarScript.defer = true;
-                    document.body.appendChild(navbarScript);
-                })
-                .catch(error => console.error('Error loading navbar:', error));
-        });
-    </script>
-    
-</body>
+    <script src="js/index.js"></script>
+  </body>
 </html>
