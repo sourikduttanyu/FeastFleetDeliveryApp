@@ -1,0 +1,116 @@
+/* General reset */
+body, h1, h2, p, button {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f9f9f9;
+    padding: 20px;
+}
+
+/* Main container */
+.restaurant-info-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Restaurant header */
+.restaurant-header {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.restaurant-header h1 {
+    font-size: 28px;
+    color: #556B2F;
+
+    margin-bottom: 10px;
+}
+
+.restaurant-header p {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.action-buttons {
+    margin-top: 10px;
+}
+
+.action-buttons button {
+    background-color: #556B2F;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.action-buttons button:hover {
+    background-color: #556B2F;
+}
+
+/* Popular items section */
+.popular-items {
+    margin-top: 30px;
+}
+
+.popular-items h2 {
+    font-size: 24px;
+    color: #556B2F;
+    margin-bottom: 10px;
+}
+
+#popular-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Item card */
+.item-card {
+    display: flex;
+    align-items: center;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    gap: 10px;
+}
+
+.item-card img {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.item-card .details {
+    flex: 1;
+}
+
+.item-card .details h3 {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.item-card .details p {
+    font-size: 14px;
+    color: #666;
+}
+
+.item-card .price {
+    font-size: 16px;
+    font-weight: bold;
+    color: #2a7b3d;
+}
