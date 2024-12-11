@@ -15,16 +15,17 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get('query');
+    const type = urlParams.get('type');
 
     if (query) {
-        fetchResults(query);
+        fetchResults(query, type);
     } else {
         console.error('No query found in URL');
     }
 });
 
-function fetchResults(query) {
-    const apiUrl = `https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/restaurants/search?cuisineType=${encodeURIComponent(query)}`;
+function fetchResults(query, type) {
+    const apiUrl = `https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/restaurants/search?type=${encodeURIComponent(type)}&query=${encodeURIComponent(query)}`;
 
     fetch(apiUrl, {
         method: 'GET',
