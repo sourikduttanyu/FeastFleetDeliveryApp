@@ -83,17 +83,16 @@ async function renderResults(query, data) {
             const resultItem = `
                 <div class="restaurant-card">
                     <a href="restaurant-info.html?query=${restaurantInfo.restaurant_id}">
-                        <div class="info">
-                            <p class="small-text">${restaurantInfo.address}</p>
-                            <p class="small-text">${restaurantInfo.cuisine}</p>
-                        </div>
                         <div class="image">
-                            <img src="${restaurant.image}" alt="${restaurantInfo.name}">
+                            <img src="images/restaurant.jpg" alt="${restaurantInfo.name}">
                         </div>
-                        <h3 class="restaurant-name">${restaurantInfo.name}</h3>
+                        <div class="info">
+                            <h3 class="restaurant-name">${restaurantInfo.name}</h3>
+                            <p class="address">${restaurantInfo.address}</p>
+                        </div>
                     </a>
-
                 </div>
+
             `;
             resultsContainer.innerHTML += resultItem;
         }
