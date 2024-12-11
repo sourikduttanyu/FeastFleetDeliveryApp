@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation Details</title>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        .content {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .restaurant-image {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        .reservation-details {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: left;
+            margin: 0 auto;
+            max-width: 400px;
+            background-color: #f9f9f9;
+        }
+
+        .back-button, .cancel-button {
+            display: inline-block;
+            margin: 20px 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .back-button {
+            background-color: #556B2F;
+            color: white;
+        }
+
+        .cancel-button {
+            background-color: #cc0000;
+            color: white;
+        }
+
+        .back-button:hover {
+            background-color: #6B8E23;
+        }
+
+        .cancel-button:hover {
+            background-color: #e60000;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div id="navbar"></div>
+    </header>
+
+    <div class="content">
+        <button class="back-button" onclick="returnToReservations()">⬅ View My Reservations</button>
+        <div class="reservation-details">
+            <img src="images/dumplings.png" alt="Restaurant Image" class="restaurant-image">
+            <h2 id="restaurant-name">Restaurant Name</h2>
+            <p><strong>Restaurant Address:</strong> <span id="restaurant-address">6 MetroTech</span></p>
+            <p><strong>Reservation Date:</strong> <span id="reservation-date">2024/12/25</span></p>
+            <p><strong>Reservation Time:</strong> <span id="reservation-time">11:30 am</span></p>
+            <p><strong>Number of People:</strong> <span id="party-size">5</span></p>
+        </div>
+        <button class="cancel-button" onclick="cancelReservation()">Cancel the reservation</button>
+    </div>
+    <script src="apiGateway-js-sdk/lib/CryptoJS/rollups/crypto-js.js"></script>
+    <script src="apiGateway-js-sdk/lib/CryptoJS/components/hmac.js"></script>
+    <script src="apiGateway-js-sdk/lib/CryptoJS/rollups/sha256.js"></script>
+    <script src="apiGateway-js-sdk/lib/axios/dist/axios.standalone.js"></script>
+    <script src="apiGateway-js-sdk/lib/url-template/url-template.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/utils.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/sigV4Client.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/simpleHttpClient.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/apiGatewayClient.js"></script>
+    <script src="apiGateway-js-sdk/apigClient.js"></script>
+    <script src="js/reservation-view.js"></script>
+    <script>
+        // Load the navbar from navbar.html
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('navbar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('navbar').innerHTML = data;
+    
+                    // Initialize navbar logic after it's added to the DOM
+                    const navbarScript = document.createElement('script');
+                    navbarScript.src = 'js/navbar.js';
+                    navbarScript.defer = true;
+                    document.body.appendChild(navbarScript);
+                })
+                .catch(error => console.error('Error loading navbar:', error));
+        });
+    </script>
+</body>
+</html>

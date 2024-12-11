@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation - Feast Fleet</title>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        /* Reservation Styles */
+        .reservation-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            margin: 40px auto;
+            max-width: 800px;
+        }
+
+        .calendar-section {
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .time-section {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .time-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .time-slot {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .time-slot:hover {
+            background-color: #556B2F;
+            color: white;
+        }
+
+        .time-slot.selected {
+            background-color: #556B2F; /* Highlight color for selected slot */
+            color: white; /* Text color for selected slot */
+            border: 2px solid #6B8E23; /* Optional: Add a border for clarity */
+        }
+
+        .time-slot.unavailable {
+            background-color: #e0e0e0;
+            color: #999;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
+        .party-size {
+            margin-top: 20px;
+        }
+
+        .party-size label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .party-size select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .cancel-button {
+            background-color: #ccc;
+            color: white;
+        }
+
+        .confirm-button {
+            background-color: #556B2F;
+            color: white;
+        }
+
+        .confirm-button:hover {
+            background-color: #6B8E23;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div id="navbar"></div>
+    </header>
+
+    <div class="content reservation-container">
+        <div class="calendar-section">
+            <h2>Restaurant Name</h2>
+            <label for="date">Date:</label>
+            <input type="date" id="date" name="date" required>
+            <div class="party-size">
+                <label for="party-size">Number of People</label>
+                <select id="party-size" name="party-size"></select>
+            </div>
+        </div>
+        <div class="time-section">
+            <h3>Select a Time</h3>
+            <div class="time-list" id="time-list">
+                <!-- Time slots will be dynamically populated here -->
+            </div>
+            <div class="buttons">
+                <button class="cancel-button">Cancel</button>
+                <button class="confirm-button" id="reserve-button">Reserve</button>
+            </div>
+        </div>
+    </div>
+    <script src="apiGateway-js-sdk/lib/CryptoJS/rollups/crypto-js.js"></script>
+    <script src="apiGateway-js-sdk/lib/CryptoJS/components/hmac.js"></script>
+    <script src="apiGateway-js-sdk/lib/CryptoJS/rollups/sha256.js"></script>
+    <script src="apiGateway-js-sdk/lib/axios/dist/axios.standalone.js"></script>
+    <script src="apiGateway-js-sdk/lib/url-template/url-template.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/utils.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/sigV4Client.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/simpleHttpClient.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/apiGatewayClient.js"></script>
+    <script src="apiGateway-js-sdk/apigClient.js"></script>
+    <script src="js/reservation-create.js" defer></script>
+    <script>
+        // Load the navbar from navbar.html
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('navbar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('navbar').innerHTML = data;
+    
+                    // Initialize navbar logic after it's added to the DOM
+                    const navbarScript = document.createElement('script');
+                    navbarScript.src = 'js/navbar.js';
+                    navbarScript.defer = true;
+                    document.body.appendChild(navbarScript);
+                })
+                .catch(error => console.error('Error loading navbar:', error));
+        });
+    </script>
+</body>
+</html>
