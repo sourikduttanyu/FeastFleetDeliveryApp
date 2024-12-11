@@ -58,7 +58,7 @@ async function getCartContent(userId, idToken) {
           <button id="placeOrderBtn">Continue to payment</button>`;
         
         document.getElementById('placeOrderBtn').addEventListener('click', () => {
-            placeOrder(cart);
+            placeOrder(cart, idToken);
         });
     } catch (error) {
         console.error('Error:', error);
