@@ -6,7 +6,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
 
     // const restaurantId = "3c17f456-34f5-4a9b-94c4-ecd74c403950"; // Replace with the actual restaurant ID
-    const restaurantId = urlParams.get('query');
+    
+    const restaurantId = urlParams.get('restaurant_id');
+    const restaurant_name = urlParams.get('restaurant_name');
+
+    if(restaurant_name){
+        const container = document.querySelector(".calendar-section h2");
+        container.innerHTML = restaurant_name;
+    }
+
+    console.log('RESTAURANT ID', restaurantId);
     // Initialize the default date and party size
     const today = new Date().toISOString().split("T")[0];
     dateInput.value = today;
