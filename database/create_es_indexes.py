@@ -178,5 +178,5 @@ def push_menu_items_to_opensearch():
 # Main function
 if __name__ == "__main__":
     create_indexes()
-    #push_restaurants_to_opensearch()
+    push_restaurants_to_opensearch()
     push_menu_items_to_opensearch()
