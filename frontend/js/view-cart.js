@@ -1,16 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
-    fetch('navbar.html')
-        .then(response => response.text())
-        .then(data => {
-            document.getElementById('navbar').innerHTML = data;
-        })
-        .catch(error => console.error('Error loading navbar:', error));
-    getCartContent('user1')
+    const idToken = localStorage.getItem("idToken");
+    if (!idToken) {
+        alert("You need to log in to access the cart.");
+        window.location.href = "login.html";
+        return;
+    }
+
+    const userId = localStorage.getItem("userId");
+
+    getCartContent(userId, idToken);
 });
-async function getCartContent(userId) {
+async function getCartContent(userId, idToken) {
     try {
         const response = await fetch(`https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/cart/get?user_id=${encodeURIComponent(userId)}`, {
             method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${idToken}`, // Add the authorization header
+                'Content-Type': 'application/json'
+            }
         });
 
         if (!response.ok) {
@@ -57,36 +64,22 @@ async function getCartContent(userId) {
         console.error('Error:', error);
     }
 }
-async function placeOrder(cartContent) {
+async function placeOrder(cartContent, idToken) {
     try {
         const requestBody = {
-            resource: "/place-order",
-            path: "/place-order",
-            httpMethod: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            requestContext: {
-                authorizer: {
-                    claims: {
-                        sub: "test123" // Replace with dynamic user information if available
-                    }
-                }
-            },
-            body: JSON.stringify({
-                restaurant_id: cartContent.restaurant_id,
-                items: cartContent.item_list.map(item => ({
-                    item_id: item.item_id,
-                    quantity: item.item_quantity
-                })),
-                total_price: cartContent.total_price
-            })
+            restaurant_id: cartContent.restaurant_id,
+            items: cartContent.item_list.map(item => ({
+                item_id: item.item_id,
+                quantity: item.item_quantity
+            })),
+            total_price: cartContent.total_price
         };
 
         const response = await fetch('https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/orders', { // Replace with your actual API endpoint
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
             },
             body: JSON.stringify(requestBody)
         });

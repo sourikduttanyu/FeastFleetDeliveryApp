@@ -2,6 +2,13 @@ async function fetchOrderDetails() {
     try {
         console.log('Current URL search params:', window.location.search);
 
+        const idToken = localStorage.getItem("idToken");
+        if (!idToken) {
+            alert("You need to log in to make a reservation.");
+            window.location.href = "login.html";
+            return;
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('orderId'); // Matches 'orderId' in the URL
         console.log('Extracted orderId:', orderId);
@@ -16,7 +23,7 @@ async function fetchOrderDetails() {
         console.log('Fetching from:', `${API_URL}/${orderId}`);
         const response = await fetch(`${API_URL}/${orderId}`, {
             headers: {
-                'Authorization': 'Bearer YOUR_TOKEN_HERE' // Replace with the actual token
+                'Authorization': `Bearer ${idToken}`, // Replace with the actual token
             }
         });
 
