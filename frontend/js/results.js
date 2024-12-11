@@ -4,16 +4,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get('query');
     const type = urlParams.get('type');
-
+    const location = urlParams.get('location');
+    console.log(query, type, location)
     if (query) {
-        fetchResults(query, type);
+        fetchResults(query, type, location);
     } else {
         console.error('No query found in URL');
     }
+
+    const searchButton = document.getElementById("search-button");
+    const searchInput = document.getElementById("searchInput");
+    searchButton.addEventListener("click", () => {
+    const keyword = searchInput.value.trim();
+
+    if (keyword) {
+      // Redirect to results page with the keyword as a query parameter
+      const resultsPageUrl = `results.html?type=name&query=${encodeURIComponent(keyword)}&location=${encodeURIComponent(location)}`;
+      window.location.href = resultsPageUrl;
+    } else {
+      alert("Please enter a keyword to search.");
+    }
+  });
 });
 
-function fetchResults(query, type) {
-    const apiUrl = `https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/restaurants/search?type=${encodeURIComponent(type)}&query=${encodeURIComponent(query)}`;
+function fetchResults(query, type, location) {
+    const apiUrl = `https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/restaurants/search?type=${encodeURIComponent(type)}&query=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}`;
 
     fetch(apiUrl, {
         method: 'GET',

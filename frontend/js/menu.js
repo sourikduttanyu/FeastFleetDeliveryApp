@@ -185,13 +185,13 @@ async function updateCart(selectedItems, restaurant_id, userId, idToken) {
         console.log('selectedItems:', selectedItems, 'Type:', typeof selectedItems);
         const itemsArray = Object.values(selectedItems);
         const requestData = {
-            userid: userId, // 替換成你的 userId
-            restaurant_id: restaurant_id, // 替換成你的 restaurant_id
+            userid: userId, 
+            restaurant_id: restaurant_id, 
             item_list: itemsArray.map(item => ({
                 item_id: item.item_id,
                 item_name: item.item_name,
-                item_quantity: item.quantity, // 改為 item_quantity
-                item_price: item.price, // 改為 item_price
+                item_quantity: item.quantity, 
+                item_price: item.price,
             })),
         };
         console.log(JSON.stringify(requestData, null, 2));
