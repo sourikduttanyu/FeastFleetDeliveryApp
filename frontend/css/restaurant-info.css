@@ -43,6 +43,7 @@ body {
 
 .action-buttons {
     margin-top: 10px;
+    display: flex;
 }
 
 .action-buttons button {

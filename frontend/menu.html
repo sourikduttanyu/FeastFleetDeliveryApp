@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Feast Fleet</title>
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/menu.css" />
+  </head>
+  <body>
+    <div id="navbar"></div>
+    <div class="menu-container">
+      <h1>Restaurant Name</h1>
+      <div class="item-list">
+        <div class="item">
+          <img src="images/food.jpeg" alt="Heirloom Tomato" />
+          <div class="item-info">
+            <h2>Heirloom tomato</h2>
+            <p>posted by Amy</p>
+            <div class="price-container">
+              <span>$5.99</span>
+              <div class="quantity-controls">
+                <button class="decrease">-</button>
+                <input type="number" value="1" min="1" />
+                <button class="increase">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Duplicate the item div as needed for more items -->
+      </div>
+      <button class="check-button">Check</button>
+    </div>
+    <script src="js/menu.js"></script>
+  </body>
+</html>
