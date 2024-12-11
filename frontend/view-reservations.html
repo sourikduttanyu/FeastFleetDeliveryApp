@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Reservations</title>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        .reservations-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .reservation-section {
+            margin-bottom: 40px;
+            width: 80%;
+        }
+
+        .reservation-section h2 {
+            text-align: left;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #556B2F;
+        }
+
+        .reservation-card {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #556B2F;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .reservation-card:hover {
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .reservation-card img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        .reservation-details {
+            text-align: left;
+        }
+
+        .reservation-details p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div id="navbar"></div>
+    </header>
+
+    <div class="reservations-container">
+        <div class="reservation-section" id="upcoming-reservations">
+            <h2>Upcoming Reservations</h2>
+        </div>
+        <div class="reservation-section" id="past-reservations">
+            <h2>Past Reservations</h2>
+        </div>
+    </div>
+
+    <script src="apiGateway-js-sdk/lib/CryptoJS/rollups/crypto-js.js"></script>
+    <script src="apiGateway-js-sdk/lib/CryptoJS/components/hmac.js"></script>
+    <script src="apiGateway-js-sdk/lib/CryptoJS/rollups/sha256.js"></script>
+    <script src="apiGateway-js-sdk/lib/axios/dist/axios.standalone.js"></script>
+    <script src="apiGateway-js-sdk/lib/url-template/url-template.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/utils.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/sigV4Client.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/simpleHttpClient.js"></script>
+    <script src="apiGateway-js-sdk/lib/apiGatewayCore/apiGatewayClient.js"></script>
+    <script src="apiGateway-js-sdk/apigClient.js"></script>
+    <script src="js/reservations-view.js"></script>
+    <script>
+        // Load the navbar from navbar.html
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('navbar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('navbar').innerHTML = data;
+    
+                    // Initialize navbar logic after it's added to the DOM
+                    const navbarScript = document.createElement('script');
+                    navbarScript.src = 'js/navbar.js';
+                    navbarScript.defer = true;
+                    document.body.appendChild(navbarScript);
+                })
+                .catch(error => console.error('Error loading navbar:', error));
+        });
+    </script>
+</body>
+</html>
