@@ -6,11 +6,18 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error('No query found in URL');
     }
     getRestaurantInfo(query);
+
     document.querySelectorAll('#menu-button').forEach(button => {
             button.addEventListener('click', () => {
                 window.location.href = `menu.html?query=${encodeURIComponent(query)}`;
             });
         });
+
+    // Add event listener to the reservation button
+    document.getElementById('reservation-button').addEventListener('click', () => {
+        const restaurantName = document.getElementById("restaurant-name").textContent;
+        window.location.href = `reservation-creation.html?restaurant_id=${encodeURIComponent(query)}&restaurant_name=${encodeURIComponent(restaurantName)}`;
+    });
 
     
 });
