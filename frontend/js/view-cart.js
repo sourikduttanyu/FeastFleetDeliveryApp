@@ -98,6 +98,7 @@ async function placeOrder(cartContent) {
         const result = await response.json();
         console.log('Order placed successfully:', result);
         alert('Order placed successfully!');
+        window.location.href='order-list.html'
     } catch (error) {
         console.error('Error placing order:', error);
         alert('Failed to place order. Please try again.');
