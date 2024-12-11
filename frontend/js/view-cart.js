@@ -29,7 +29,7 @@ async function getCartContent(userId) {
         items.forEach(item => {
             const itemElement = `
                 <div class="item">
-                    <img src="${item.imgSrc}" alt="${item.alt}" />
+                    <img src="images/food.jpeg" alt="food" />
                     <div class="details">
                         <h3>${item.item_name}</h3>
                         <p>$${item.item_price} dollars</p>
