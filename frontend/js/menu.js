@@ -168,9 +168,8 @@ async function updateCart(selectedItems, restaurant_id, userId, idToken) {
     try {
         const original_cart_reponse = await getCartInfo(userId, idToken);
         const original_cart = JSON.parse(original_cart_reponse.body).cart;
-        console.log(original_cart);
-        console.log(restaurant_id,original_cart.restaurant_id )
-        if (original_cart_reponse.statusCode !='404'&&original_cart && original_cart.restaurant_id !== restaurant_id) {
+
+        if (original_cart && original_cart.restaurant_id !== restaurant_id) {
             // Show modal to inform the customer
             const confirm = await showModal(
                 'Cart Conflict',
