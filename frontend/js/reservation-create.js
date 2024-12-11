@@ -3,9 +3,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const partySizeSelect = document.getElementById("party-size");
     const timeList = document.getElementById("time-list");
     const reserveButton = document.getElementById("reserve-button");
+    const urlParams = new URLSearchParams(window.location.search);
 
-    const restaurantId = "3c17f456-34f5-4a9b-94c4-ecd74c403950"; // Replace with the actual restaurant ID
-
+    // const restaurantId = "3c17f456-34f5-4a9b-94c4-ecd74c403950"; // Replace with the actual restaurant ID
+    const restaurantId = urlParams.get('query');
     // Initialize the default date and party size
     const today = new Date().toISOString().split("T")[0];
     dateInput.value = today;
@@ -148,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (response.status === 200) {
                 alert("Reservation processed! Check email for status update");
-                window.location.href = "index.html"; // Redirect to reservations list
+                window.location.href = "view-reservations.html"; // Redirect to reservations list
             } else {
                 alert("Failed to make reservation. Please try again.");
                 console.error("Reservation error:", response);

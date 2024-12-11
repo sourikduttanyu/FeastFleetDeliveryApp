@@ -7,10 +7,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     getRestaurantInfo(query);
     document.querySelectorAll('#menu-button').forEach(button => {
-            button.addEventListener('click', () => {
-                window.location.href = `menu.html?query=${encodeURIComponent(query)}`;
-            });
+        button.addEventListener('click', () => {
+            window.location.href = `menu.html?query=${encodeURIComponent(query)}`;
         });
+    });
+    document.querySelectorAll('#reservation-button').forEach(button => {
+        button.addEventListener('click', () => {
+            window.location.href = `reservation-creation.html?query=${encodeURIComponent(query)}`;
+        });
+    });
 
     
 });
