@@ -1,54 +1,62 @@
 document.addEventListener("DOMContentLoaded", () => {
-    fetch("navbar.html")
-        .then((response) => response.text())
-        .then((data) => {
-            document.getElementById("navbar").innerHTML = data;
-
-            // Initialize navbar logic after it's added to the DOM
-            const navbarScript = document.createElement("script");
-            navbarScript.src = "js/navbar.js";
-            navbarScript.defer = true;
-            document.body.appendChild(navbarScript);
-        })
-        .catch((error) => console.error("Error loading navbar:", error));
 
     const urlParams = new URLSearchParams(window.location.search);
     const query = urlParams.get("query");
-    const userId = 'user1';
     if (!query) {
         console.error("No query found in URL");
     }
-    getMenuItem(query, userId);
+
+    const idToken = localStorage.getItem("idToken");
+        if (!idToken) {
+            alert("You need to log in to make a reservation.");
+            window.location.href = "login.html";
+            return;
+        }
+
+    const userId = localStorage.getItem("userId");
+
+    getMenuItem(query, userId, idToken);
 
 });
 
-async function getCartInfo(userId) {
+async function getCartInfo(userId, idToken) {
     try {
         const response = await fetch(`https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/cart/get?user_id=${encodeURIComponent(userId)}`, {
             method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${idToken}`, // Add Authorization header
+            },
         });
+
+        console.log('GET CART INFO ', response);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch cart content. Status: ${response.status}`);
         }
 
         const responseBody = await response.json();
-        const cart = JSON.parse(responseBody.body).cart;
-        console.log(cart);
-        return cart;
+        
+        return responseBody;
     }
     catch (error) {
         console.log(error);
     }
 }
 
-async function getMenuItem(query, userId) {
+async function getMenuItem(query, userId, idToken) {
     const apiUrl = `https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev/menu/${query}`;
     const infoContainer = document.querySelector(".menu-container");
     infoContainer.innerHTML = "";
     const selectedItems = {}; // 用於存儲數量大於 0 的項目
     try {
-        const response = await fetch(apiUrl);
+        const response = await fetch(apiUrl, {
+            headers: {
+                'Authorization': `Bearer ${idToken}`, // Add Authorization header
+            },
+        });
+
+        console.log('GET MENU ITEM RESPONSE ', response);
+
         if (!response.ok) {
             throw new Error(`Failed to fetch restaurant data for ID: ${query}`);
         }
@@ -94,7 +102,7 @@ async function getMenuItem(query, userId) {
                         delete selectedItems[index]; // Remove item if quantity <= 0
                     }
                     console.log("Selected items:", selectedItems);
-                    updateCart(selectedItems, query, userId)
+                    updateCart(selectedItems, query, userId, idToken)
                         .then(response => console.log('Cart updated:', response))
                         .catch(error => console.error('Error updating cart:', error));
                     
@@ -156,11 +164,13 @@ function showModal(title, message) {
     });
 }
 
-async function updateCart(selectedItems, restaurant_id, userId) {
+async function updateCart(selectedItems, restaurant_id, userId, idToken) {
     try {
-        const original_cart = await getCartInfo(userId);
+        const original_cart_reponse = await getCartInfo(userId, idToken);
+        const original_cart = JSON.parse(original_cart_reponse.body).cart;
+        console.log(original_cart);
         console.log(restaurant_id,original_cart.restaurant_id )
-        if (original_cart && original_cart.restaurant_id !== restaurant_id) {
+        if (original_cart_reponse.statusCode !='404'&&original_cart && original_cart.restaurant_id !== restaurant_id) {
             // Show modal to inform the customer
             const confirm = await showModal(
                 'Cart Conflict',
@@ -191,9 +201,12 @@ async function updateCart(selectedItems, restaurant_id, userId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`,
             },
             body: JSON.stringify(requestData),
         });
+
+        console.log('UPDATE RESPONSE ', response);
 
         if (!response.ok) {
             throw new Error(`Error updating cart: ${response.statusText}`);

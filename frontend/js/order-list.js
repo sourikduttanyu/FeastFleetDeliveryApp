@@ -1,20 +1,33 @@
 async function fetchOrders() {
     try {
         const API_URL = 'https://930lk1e388.execute-api.us-east-1.amazonaws.com/dev';
-        const userId = 'test123';
+        
 
-        // Get user_id from local storage or session
-        // const userId = localStorage.getItem('userId');
-        // if (!userId) {
-        //     // Redirect to login if no user ID
-        //     window.location.href = 'login.html';
-        //     return;
-        // }
+
+        const idToken = localStorage.getItem("idToken");
+        if (!idToken) {
+            alert("You need to log in to make a reservation.");
+            window.location.href = "login.html";
+            return;
+        }
+
+        const userId = localStorage.getItem("userId");
 
         const fullUrl = `${API_URL}/orders?user_id=${encodeURIComponent(userId)}`;
 
         console.log('Fetching from:', fullUrl);
-        const response = await fetch(fullUrl);
+        // Add the Authorization header with the ID token
+        const response = await fetch(fullUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${idToken}`, // Include the ID token in the Authorization header
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch orders: ${response.status}`);
+        }
 
         
         const data = await response.json();

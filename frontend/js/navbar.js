@@ -1,4 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Load the navbar from navbar.html
+    fetch('navbar.html')
+        .then((response) => response.text())
+        .then((data) => {
+            // Insert the navbar into the DOM
+            document.getElementById('navbar').innerHTML = data;
+
+            // Initialize the navbar functionality
+            initializeNavbarAuth();
+        })
+        .catch((error) => console.error('Error loading navbar:', error));
+});
+
+// Function to handle the login/logout logic for the navbar
+function initializeNavbarAuth() {
     const authLink = document.getElementById('auth-link');
 
     if (!authLink) {
@@ -54,4 +69,4 @@ document.addEventListener('DOMContentLoaded', () => {
         authLink.textContent = 'Login';
         authLink.href = 'login.html'; // Redirect to login page
     }
-});
+}
