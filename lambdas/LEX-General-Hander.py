@@ -28,16 +28,19 @@ def lambda_handler(event, context):
     Main Lambda handler for Lex V2.
     This function determines which intent is triggered and routes the request to the appropriate handler.
     """
-    
     # Extract the intent name from the event payload
     intent_name = event['sessionState']['intent']['name']
+    print(event)
     session_attributes = event.get('sessionState', {}).get('sessionAttributes', {})
-
+    # Retrieve the user ID
+    user_id = session_attributes.get('user_id')
+    # user_id = "5418a468-9021-70be-a697-06453af3c75f"
+    print('USER_ID', user_id)
     # Route to the appropriate handler based on the intent
     if intent_name == "MainIntent":
-        return handle_main_intent(event, session_attributes)
+        return handle_main_intent(event, session_attributes, user_id)
     elif intent_name == "OrderIntent":
-        return handle_order_intent(event, session_attributes)
+        return handle_order_intent(event, session_attributes, user_id)
     else:
         return default_fallback_response(event, session_attributes)
 
@@ -46,7 +49,7 @@ def decimal_default(obj):
         return float(obj)
     raise TypeError
 
-def handle_main_intent(event, session_attributes):
+def handle_main_intent(event, session_attributes, user_id):
     """
     Handler for MainIntent.
     Determines if the user wants to place an order and fetches nearby restaurants based on user coordinates.
@@ -58,9 +61,6 @@ def handle_main_intent(event, session_attributes):
         slots.get("ProceedOrder", {}).get("value", {}).get("interpretedValue")
         if slots.get("ProceedOrder") else None
     )
-
-    # Simulate fetching user_id from Cognito (in a real scenario, extract this from the event)
-    user_id = "test123"
 
     if not proceed_order:
         return {
@@ -401,13 +401,13 @@ def initialize_cart(user_id):
         logger.error(f"Error initializing cart for user {user_id}: {e}")
         return []  # Return an empty cart as a fallback
 
-def handle_order_intent(event, session_attributes):
+def handle_order_intent(event, session_attributes, user_id):
     """
     Handles the order intent by retrieving the menu, collecting item and quantity, and updating the cart.
     """
     intent = event['sessionState']['intent']
     slots = intent['slots']
-    user_id = "test123"  # Replace with actual user ID retrieval logic
+    # user_id = "test123"  # Replace with actual user ID retrieval logic
 
     # Safely retrieve slot values
     restaurant_name = (
@@ -478,7 +478,26 @@ def handle_order_intent(event, session_attributes):
 
     # Step 2: Retrieve menu and prompt for item name
     if not item_name:
-        # Check if user is already being asked for the item name
+        # Ensure the menu is only stored once
+        if "menu" not in session_attributes:
+            # Retrieve menu for the given restaurant
+            menu = get_menu_by_restaurant_id(restaurant_id)
+            if not menu:
+                return {
+                    "sessionState": {
+                        "sessionAttributes": session_attributes,
+                        "dialogAction": {"type": "Close"},
+                        "intent": intent
+                    },
+                    "messages": [{"contentType": "PlainText", "content": "I couldn't find the menu for this restaurant. Please try another one."}]
+                }
+
+            # Format and store the menu
+            menu_list = "\n".join([f"{i+1}. {item['item_name']} - ${item['price']:.2f}" for i, item in enumerate(menu)])
+            session_attributes["menu"] = json.dumps(menu)
+            logger.info(f"Menu stored in session attributes: {session_attributes['menu']}")
+
+        # Check if the user is already being asked for the item name
         if session_attributes.get("waiting_for_item_name") == "true":
             return {
                 "sessionState": {
@@ -492,33 +511,6 @@ def handle_order_intent(event, session_attributes):
         # Set flag to track that we are eliciting the item name
         session_attributes["waiting_for_item_name"] = "true"
 
-        # Ensure restaurant_id exists
-        if not restaurant_id:
-            logger.error("Restaurant ID is missing while trying to retrieve the menu.")
-            return {
-                "sessionState": {
-                    "sessionAttributes": session_attributes,
-                    "dialogAction": {"type": "ElicitSlot", "slotToElicit": "RestaurantName"},
-                    "intent": intent
-                },
-                "messages": [{"contentType": "PlainText", "content": "It seems I lost the restaurant information. Could you tell me the name of the restaurant again?"}]
-            }
-
-        # Retrieve menu for the given restaurant
-        menu = get_menu_by_restaurant_id(restaurant_id)
-        if not menu:
-            return {
-                "sessionState": {
-                    "sessionAttributes": session_attributes,
-                    "dialogAction": {"type": "Close"},
-                    "intent": intent
-                },
-                "messages": [{"contentType": "PlainText", "content": "I couldn't find the menu for this restaurant. Please try another one."}]
-            }
-
-        # Format and store the menu
-        menu_list = "\n".join([f"{i+1}. {item['item_name']} - ${item['price']:.2f}" for i, item in enumerate(menu)])
-        session_attributes["menu"] = json.dumps(menu)
         return {
             "sessionState": {
                 "sessionAttributes": session_attributes,
@@ -531,6 +523,7 @@ def handle_order_intent(event, session_attributes):
         # Reset flag after item name is provided
         session_attributes.pop("waiting_for_item_name", None)
 
+    
     # Step 3: Ask for quantity
     if not quantity:
         return {
@@ -541,10 +534,13 @@ def handle_order_intent(event, session_attributes):
             },
             "messages": [{"contentType": "PlainText", "content": f"How many {item_name} would you like to order?"}]
         }
-
+    print(quantity, session_attributes)
     # Fetch the menu from session attributes
     menu = json.loads(session_attributes.get("menu", "[]"))
+    if not menu:
+        menu = get_menu_by_restaurant_id(restaurant_id)
     item = next((menu_item for menu_item in menu if menu_item["item_name"].lower() == item_name.lower()), None)
+    print(item)
 
     if not item:
         logger.error(f"Item with name '{item_name}' not found in the menu.")
@@ -581,11 +577,12 @@ def handle_order_intent(event, session_attributes):
 
     # Save the updated cart to DynamoDB only when confirmed and after modifying the cart
     try:
+        cart = json.loads(session_attributes.get("cart", "[]"))
         cart_table = dynamodb.Table("Cart")
         cart_table.put_item(
             Item={
                 "user_id": user_id,
-                "cart": decimal_to_float(cart)  # Save the updated cart
+                "cart": cart  # Save the updated cart
             }
         )
         logger.info(f"Updated cart saved for user {user_id}.")
@@ -635,7 +632,7 @@ def handle_order_intent(event, session_attributes):
     if order_confirmation.lower() == "yes":
         restaurant_id = session_attributes["restaurant_id"]
         items = [{"item_id": item["item_id"], "quantity": item["quantity"]} for item in cart]
-        total_price = session_attributes["total_price"]
+        total_price = sum(item["price"] * item["quantity"] for item in cart)
 
         # Generate a unique order ID
         order_id = str(uuid.uuid4())
