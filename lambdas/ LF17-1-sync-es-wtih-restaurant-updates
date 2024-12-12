@@ -1,0 +1,108 @@
+import json
+import boto3
+from requests_aws4auth import AWS4Auth
+import requests
+
+# AWS Region and OpenSearch Endpoint
+REGION = 'us-east-1'  # Replace with your AWS region
+HOST =  'search-feastfleet-ylmv33u5rsoztak4q2xazv4x7u.us-east-1.es.amazonaws.com'  # Replace with your OpenSearch endpoint
+INDEX_NAME = 'restaurants_index'  # Replace with your OpenSearch index name
+
+# Initialize AWS session and credentials
+session = boto3.Session()
+credentials = session.get_credentials()
+aws_auth = AWS4Auth(
+    credentials.access_key,
+    credentials.secret_key,
+    REGION,
+    'es',
+    session_token=credentials.token
+)
+
+def lambda_handler(event, context):
+    """
+    Lambda handler to process DynamoDB stream events and sync data with OpenSearch.
+    """
+    print(event)
+    for record in event['Records']:
+        event_name = record['eventName']  # INSERT, MODIFY, REMOVE
+        dynamodb = record['dynamodb']
+
+        # Handle INSERT and MODIFY events
+        if event_name in ['INSERT', 'MODIFY']:
+            new_image = dynamodb['NewImage']
+            document = parse_dynamodb_item(new_image)
+            document_id = document['restaurant_id']
+            index_document(document_id, document)
+
+        # Handle REMOVE event
+        elif event_name == 'REMOVE':
+            old_image = dynamodb['Keys']
+            document_id = old_image['restaurant_id']['S']
+            delete_document(document_id)
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps("DynamoDB stream successfully processed.")
+    }
+
+
+def parse_dynamodb_item(item):
+    """
+    Parse a DynamoDB item into a format suitable for OpenSearch.
+    """
+    return {
+        'restaurant_id': item['restaurant_id']['S'],
+        'name': item['name']['S'],
+        'address': item['address']['S'],
+        'capacity': int(item['capacity']['N']),
+        'coordinates': {
+            'lat': float(item['coordinates']['M']['lat']['N']),
+            'lon': float(item['coordinates']['M']['lon']['N'])
+        },
+        'cuisine': item['cuisine']['S'],
+        'full_url': item['full_url']['S'],
+        'hours': parse_hours(item['hours']['L'])
+    }
+
+
+def index_document(document_id, document):
+    """
+    Index or update a document in OpenSearch.
+    """
+    url = f"https://{HOST}/{INDEX_NAME}/_doc/{document_id}"
+    headers = {"Content-Type": "application/json"}
+    response = requests.put(url, auth=('admin','Cloudcomputing2024!!'), json=document, headers=headers)
+
+    if response.status_code in [200, 201]:
+        print(f"Document {document_id} indexed successfully.")
+    else:
+        print(f"Failed to index document {document_id}: {response.status_code}, {response.text}")
+
+def parse_hours(hours_list):
+    """
+    Convert the hours attribute to a JSON string for OpenSearch indexing.
+    """
+    parsed_hours = []
+    for entry in hours_list:
+        day_info = entry['M']
+        parsed_hours.append({
+            'day': day_info['day']['S'],
+            'open': day_info['open']['BOOL'],
+            'opening_hour': day_info['opening_hour'].get('S', None),
+            'closing_hour': day_info['closing_hour'].get('S', None)
+        })
+    return json.dumps(parsed_hours)  # Convert to a JSON string
+
+    
+def delete_document(document_id):
+    """
+    Delete a document from OpenSearch.
+    """
+    url = f"https://{HOST}/{INDEX_NAME}/_doc/{document_id}"
+    response = requests.delete(url, auth=('admin','Cloudcomputing2024!!'))
+
+    if response.status_code == 200:
+        print(f"Document {document_id} deleted successfully.")
+    else:
+        print(f"Failed to delete document {document_id}: {response.status_code}, {response.text}")

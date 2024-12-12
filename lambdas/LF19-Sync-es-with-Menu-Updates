@@ -1,0 +1,82 @@
+import json
+import boto3
+from requests_aws4auth import AWS4Auth
+import requests
+
+# AWS Region and OpenSearch Endpoint
+REGION = 'us-east-1'  # Replace with your AWS region
+HOST =  'search-feastfleet-ylmv33u5rsoztak4q2xazv4x7u.us-east-1.es.amazonaws.com'  # Replace with your OpenSearch endpoint
+INDEX_NAME = 'menu_items_index'  # Replace with your OpenSearch index name
+
+# Initialize AWS session and credentials
+session = boto3.Session()
+credentials = session.get_credentials()
+aws_auth = AWS4Auth(
+    credentials.access_key,
+    credentials.secret_key,
+    REGION,
+    'es',
+    session_token=credentials.token
+)
+
+
+def lambda_handler(event, context):
+    """
+    Lambda handler to process DynamoDB stream events and sync data with OpenSearch.
+    """
+    for record in event['Records']:
+        event_name = record['eventName']  # INSERT, MODIFY, REMOVE
+        dynamodb = record['dynamodb']
+
+        if event_name in ['INSERT', 'MODIFY']:
+            new_image = dynamodb['NewImage']
+            document = parse_dynamodb_item(new_image)
+            document_id = document['item_id']
+            index_document(document_id, document)
+
+        elif event_name == 'REMOVE':
+            old_image = dynamodb['Keys']
+            document_id = old_image['item_id']['S']
+            delete_document(document_id)
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps("DynamoDB stream successfully processed.")
+    }
+
+def parse_dynamodb_item(item):
+    """
+    Parse a DynamoDB item into a format suitable for OpenSearch.
+    """
+    return {
+        'item_id': item['item_id']['S'],
+        'item_name': item['item_name']['S'],
+        'price': float(item['price']['N']),
+        'restaurant_id': item['restaurant_id']['S'],
+        'restaurant_name': item['restaurant_name']['S']
+    }
+
+def index_document(document_id, document):
+    """
+    Index or update a document in OpenSearch.
+    """
+    url = f"https://{HOST}/{INDEX_NAME}/_doc/{document_id}"
+    headers = {"Content-Type": "application/json"}
+    response = requests.put(url, auth=('admin','Cloudcomputing2024!!'), json=document, headers=headers)
+
+    if response.status_code in [200, 201]:
+        print(f"Document {document_id} indexed successfully.")
+    else:
+        print(f"Failed to index document {document_id}: {response.status_code}, {response.text}")
+
+def delete_document(document_id):
+    """
+    Delete a document from OpenSearch.
+    """
+    url = f"https://{HOST}/{INDEX_NAME}/_doc/{document_id}"
+    response = requests.delete(url, auth=('admin','Cloudcomputing2024!!'))
+
+    if response.status_code == 200:
+        print(f"Document {document_id} deleted successfully.")
+    else:
+        print(f"Failed to delete document {document_id}: {response.status_code}, {response.text}")
