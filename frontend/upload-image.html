@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feast Fleet - Upload Image</title>
+    <link rel="stylesheet" href="css/results.css" />
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/upload-image.css">
     <style>
@@ -36,29 +37,11 @@
                 <span class="upload-icon">+</span>
                 <img id="previewImage" alt="Uploaded Image Preview">
             </label>
-            <input type="file" id="imageUpload" class="hidden-input" accept="image/*">
+            <input type="file" id="imageUpload" class="hidden-input" accept="image/jpeg, image/png">
         </div>
-        <button class="upload-button">Upload the Image →</button>
+        <button id="uploadButton" class="upload-button">Upload the Image →</button>
+        <div class="results" id="resultsContainer"></div>
     </main>
-    <script>
-        // Show image preview
-        const imageUpload = document.getElementById('imageUpload');
-        const previewImage = document.getElementById('previewImage');
-        const uploadIcon = document.querySelector('.upload-icon');
-
-        imageUpload.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    previewImage.src = reader.result;
-                    previewImage.style.display = 'block';
-                    uploadIcon.style.display = 'none'; // Hide the plus icon
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    </script>
     <script src="apiGateway-js-sdk/lib/CryptoJS/rollups/crypto-js.js"></script>
     <script src="apiGateway-js-sdk/lib/CryptoJS/components/hmac.js"></script>
     <script src="apiGateway-js-sdk/lib/CryptoJS/rollups/sha256.js"></script>
@@ -69,6 +52,6 @@
     <script src="apiGateway-js-sdk/lib/apiGatewayCore/simpleHttpClient.js"></script>
     <script src="apiGateway-js-sdk/lib/apiGatewayCore/apiGatewayClient.js"></script>
     <script src="apiGateway-js-sdk/apigClient.js"></script>
+    <script src="js/upload-image.js"></script>
     <script src="js/navbar.js"></script>
 </body>
-</html>

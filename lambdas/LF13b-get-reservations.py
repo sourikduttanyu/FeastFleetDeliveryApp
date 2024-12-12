@@ -7,9 +7,11 @@ dynamodb = boto3.client('dynamodb')
 
 # Table name
 RESERVATION_TABLE = 'Reservation'
+RESTAURANT_TABLE = 'Restaurant'
 
 def lambda_handler(event, context):
     try:
+        print('EVENT ',event)
         # Validate user authentication (Cognito JWT token)
         user_id = event['requestContext']['authorizer']['claims']['sub']
         if not user_id:
@@ -75,6 +77,10 @@ def categorize_reservations(reservations):
     upcoming_reservations = []
 
     for reservation in sorted_reservations:
+        restaurant = fetch_restaurant(reservation['restaurant_id'])
+        reservation['restaurant_name'] = restaurant['name']['S']
+        reservation['restaurant_address'] = restaurant['address']['S']
+
         reservation_datetime = datetime.strptime(
             f"{reservation['res_date']} {reservation['time']}", "%Y-%m-%d %H:%M"
         )
@@ -84,3 +90,13 @@ def categorize_reservations(reservations):
             upcoming_reservations.append(reservation)
 
     return past_reservations, upcoming_reservations
+
+
+
+def fetch_restaurant(restaurant_id):
+    """Fetch restaurant details from DynamoDB."""
+    response = dynamodb.get_item(
+        TableName=RESTAURANT_TABLE,
+        Key={'restaurant_id': {'S': restaurant_id}}
+    )
+    return response.get('Item')

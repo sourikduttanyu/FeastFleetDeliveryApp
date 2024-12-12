@@ -48,7 +48,18 @@ def lambda_handler(event, context):
         if not hours_capacity:
             return {
                 'statusCode': 200,
-                'body': json.dumps({'available_times': []})  # Closed on that day
+                'body': json.dumps({
+                    'available_times': [],
+                    'message': "hours not found"
+                    })
+            }
+        elif hours_capacity.get('message'):
+            return {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'available_times': [],
+                    'message': hours_capacity['message']
+                    })
             }
 
         opening_hour = datetime.strptime(hours_capacity['opening_hour'], "%H:%M")
@@ -60,9 +71,10 @@ def lambda_handler(event, context):
         closing_hour = datetime.combine(date, closing_hour.time())
 
         # Filter out past times if the requested date is today
-        now = datetime.now()
+        now = datetime.now() - timedelta(hours=5)
         if date.date() == today:
             opening_hour = max(opening_hour, now)
+        opening_hour = round_up_to_next_15_minutes(opening_hour)
 
         # Get existing reservations for the given restaurant and date
         reservations = get_reservations(restaurant_id, date_str)
@@ -73,7 +85,11 @@ def lambda_handler(event, context):
         # Return available times
         return {
             'statusCode': 200,
-            'body': json.dumps({'available_times': available_times})
+            'body': json.dumps({
+                'available_times': available_times,
+                'opening_hour':opening_hour.strftime("%H:%M"),
+                'closing_hour':closing_hour.strftime("%H:%M")
+                })
         }
 
     except Exception as e:
@@ -103,7 +119,7 @@ def get_restaurant_hours_and_capacity(restaurant_id, day_of_week):
                 # Check if the restaurant is open on this day
                 if not day_info['M']['open']['BOOL']:
                     logger.info('restaurant closed')
-                    return None  # Restaurant is closed on this day
+                    return {'message' : "Restaurant is closed."}  # Restaurant is closed on this day
 
                 return {
                     'capacity': capacity,
@@ -141,7 +157,9 @@ def calculate_availability(opening_time, closing_time, reservations, party_size,
     while current_time <= closing_time:
         time_str = current_time.strftime("%H:%M")
         if is_time_available(current_time, reservations, party_size, capacity):
-            available_times.append(current_time.strftime("%I:%M %p"))  # Return in 12-hour format with AM/PM
+            available_times.append(['A', current_time.strftime("%I:%M %p")]) # Return in 12-hour format with AM/PM
+        else:
+            available_times.append(['U', current_time.strftime("%I:%M %p")]) 
         current_time += timedelta(minutes=15)
 
     return available_times
@@ -158,3 +176,18 @@ def is_time_available(current_time, reservations, party_size, capacity):
 
     total_reserved = sum(res['party_size'] for res in overlapping_reservations)
     return (total_reserved + party_size) <= capacity
+
+def round_up_to_next_15_minutes(date):
+    """Round the given datetime object to the next greater 15-minute interval."""
+    minute = date.minute
+    if minute == 0:
+        return date
+    elif minute <= 15:
+        remainder = 15 - minute
+    elif minute <= 30:
+        remainder = 30 - minute
+    elif minute <= 45:
+        remainder = 45 - minute
+    else:
+        remainder = 60 - minute
+    return date + timedelta(minutes=remainder, seconds=-date.second, microseconds=-date.microsecond)
