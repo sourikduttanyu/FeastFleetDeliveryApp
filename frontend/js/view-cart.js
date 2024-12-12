@@ -53,8 +53,8 @@ async function getCartContent(userId, idToken) {
         });
         summaryContainer.innerHTML += `
         <h3>Order summary</h3>
-          <p>Subtotal: ${cart.total_price}</p>
-          <p><strong>Total: ${cart.total_price }</strong></p>
+          <p>Subtotal: $${cart.total_price}</p>
+          <p><strong>Total: $${cart.total_price }</strong></p>
           <button id="placeOrderBtn">Continue to payment</button>`;
         
         document.getElementById('placeOrderBtn').addEventListener('click', () => {
