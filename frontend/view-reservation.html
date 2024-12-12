@@ -1,77 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reservation Details</title>
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/main.css" />
     <style>
-        .content {
-            text-align: center;
-            padding: 40px;
-        }
+      .content {
+        text-align: center;
+        padding: 40px;
+      }
 
-        .restaurant-image {
-            max-width: 150px;
-            height: auto;
-            margin-bottom: 20px;
-        }
+      .restaurant-image {
+        max-width: 150px;
+        height: auto;
+        margin-bottom: 20px;
+      }
 
-        .reservation-details {
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: left;
-            margin: 0 auto;
-            max-width: 400px;
-            background-color: #f9f9f9;
-        }
+      .reservation-details {
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: left;
+        margin: 0 auto;
+        max-width: 400px;
+        background-color: #f9f9f9;
+      }
 
-        .back-button, .cancel-button {
-            display: inline-block;
-            margin: 20px 10px;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
+      .back-button,
+      .cancel-button {
+        display: inline-block;
+        margin: 20px 10px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+      }
 
-        .back-button {
-            background-color: #556B2F;
-            color: white;
-        }
+      .back-button {
+        background-color: #556b2f;
+        color: white;
+      }
 
-        .cancel-button {
-            background-color: #cc0000;
-            color: white;
-        }
+      .cancel-button {
+        background-color: #cc0000;
+        color: white;
+      }
 
-        .back-button:hover {
-            background-color: #6B8E23;
-        }
+      .back-button:hover {
+        background-color: #6b8e23;
+      }
 
-        .cancel-button:hover {
-            background-color: #e60000;
-        }
+      .cancel-button:hover {
+        background-color: #e60000;
+      }
     </style>
-</head>
-<body>
-    <header>
-        <div id="navbar"></div>
-    </header>
-
+  </head>
+  <body>
+    <div id="navbar"></div>
     <div class="content">
-        <button class="back-button" onclick="returnToReservations()">⬅ View My Reservations</button>
-        <div class="reservation-details">
-            <img src="images/dumplings.png" alt="Restaurant Image" class="restaurant-image">
-            <h2 id="restaurant-name">Restaurant Name</h2>
-            <p><strong>Restaurant Address:</strong> <span id="restaurant-address">6 MetroTech</span></p>
-            <p><strong>Reservation Date:</strong> <span id="reservation-date">2024/12/25</span></p>
-            <p><strong>Reservation Time:</strong> <span id="reservation-time">11:30 am</span></p>
-            <p><strong>Number of People:</strong> <span id="party-size">5</span></p>
-        </div>
-        <button class="cancel-button" onclick="cancelReservation()">Cancel the reservation</button>
+      <button class="back-button" onclick="returnToReservations()">
+        ⬅ View My Reservations
+      </button>
+      <div class="reservation-details">
+        <img
+          src="images/dumplings.png"
+          alt="Restaurant Image"
+          class="restaurant-image"
+        />
+        <h2 id="restaurant-name">Restaurant Name</h2>
+        <p>
+          <strong>Restaurant Address:</strong>
+          <span id="restaurant-address">6 MetroTech</span>
+        </p>
+        <p>
+          <strong>Reservation Date:</strong>
+          <span id="reservation-date">2024/12/25</span>
+        </p>
+        <p>
+          <strong>Reservation Time:</strong>
+          <span id="reservation-time">11:30 am</span>
+        </p>
+        <p><strong>Number of People:</strong> <span id="party-size">5</span></p>
+      </div>
+      <button class="cancel-button" onclick="cancelReservation()">
+        Cancel the reservation
+      </button>
     </div>
     <script src="apiGateway-js-sdk/lib/CryptoJS/rollups/crypto-js.js"></script>
     <script src="apiGateway-js-sdk/lib/CryptoJS/components/hmac.js"></script>
@@ -85,5 +100,5 @@
     <script src="apiGateway-js-sdk/apigClient.js"></script>
     <script src="js/reservation-view.js"></script>
     <script src="js/navbar.js"></script>
-</body>
+  </body>
 </html>
