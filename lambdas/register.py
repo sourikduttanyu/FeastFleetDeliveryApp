@@ -75,8 +75,20 @@ def lambda_handler(event, context):
             Username=email
         )
 
-        # Generate a unique user ID for DynamoDB
-        user_id = str(uuid.uuid4())
+        # Get the user's Cognito 'sub' ID
+        user_details = client.admin_get_user(
+            UserPoolId=user_pool_id,
+            Username=email
+        )
+
+        user_id = None
+        for attr in user_details['UserAttributes']:
+            if attr['Name'] == 'sub':
+                user_id = attr['Value']
+                break
+
+        if not user_id:
+            raise Exception("Unable to retrieve Cognito 'sub' ID for the user.")
 
         # Save the user's information to DynamoDB
         dynamodb_response = table.put_item(

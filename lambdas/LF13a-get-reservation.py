@@ -6,6 +6,7 @@ dynamodb = boto3.client('dynamodb')
 
 # Table name
 RESERVATION_TABLE = 'Reservation'
+RESTAURANT_TABLE = 'Restaurant'
 
 def lambda_handler(event, context):
     try:
@@ -19,6 +20,7 @@ def lambda_handler(event, context):
 
         # Get reservation_id from query string parameters
         reservation_id = event['queryStringParameters'].get('reservation_id')
+        print('RES_ID: ', reservation_id)
         if not reservation_id:
             return {
                 'statusCode': 400,
@@ -27,6 +29,7 @@ def lambda_handler(event, context):
 
         # Fetch the reservation
         reservation = get_reservation(reservation_id)
+        print(reservation)
         if not reservation:
             return {
                 'statusCode': 404,
@@ -39,11 +42,14 @@ def lambda_handler(event, context):
                 'statusCode': 403,
                 'body': json.dumps({'error': 'Access forbidden'})
             }
+        restaurant = get_restaurant(reservation['restaurant_id']['S'])
+        restaurant_name = restaurant['name']['S']
+        restaurant_address = restaurant['address']['S']
 
         # Format and return the reservation
         return {
             'statusCode': 200,
-            'body': json.dumps(format_reservation(reservation))
+            'body': json.dumps(format_reservation(reservation, restaurant_name, restaurant_address))
         }
 
     except Exception as e:
@@ -60,12 +66,21 @@ def get_reservation(reservation_id):
     )
     return response.get('Item')
 
-def format_reservation(reservation):
+def get_restaurant(restaurant_id):
+    response = dynamodb.get_item(
+        TableName=RESTAURANT_TABLE,
+        Key={'restaurant_id': {'S': restaurant_id}}
+    )
+    return response.get('Item')
+
+def format_reservation(reservation, restaurant_name, restaurant_address):
     """Format the reservation into a readable format."""
     return {
         'reservation_id': reservation['reservation_id']['S'],
         'user_id': reservation['user_id']['S'],
         'restaurant_id': reservation['restaurant_id']['S'],
+        'restaurant_name': restaurant_name,
+        'restaurant_address': restaurant_address,
         'res_date': reservation['res_date']['S'],
         'time': reservation['time']['S'],
         'party_size': int(reservation['party_size']['N'])

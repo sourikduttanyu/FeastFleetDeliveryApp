@@ -1,6 +1,9 @@
 import boto3
 import json
 import os
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 # Initialize SQS client
 sqs = boto3.client('sqs')
@@ -9,6 +12,8 @@ sqs = boto3.client('sqs')
 QUEUE_URL = 'https://sqs.us-east-1.amazonaws.com/699475942485/Q2-reservation'
 
 def lambda_handler(event, context):
+    logger.info(f"Event: {json.dumps(event)}")
+
     try:
         # Validate user authentication (Cognito JWT token)
         user_id = event['requestContext']['authorizer']['claims']['sub']
@@ -18,29 +23,40 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Unauthorized, please login or create an account'})
             }
 
-        # Parse input
-        body = json.loads(event['body'])
-        required_fields = ['restaurant_id', 'res_date', 'time', 'party_size']
+        if isinstance(event['body'], str):
+            body = json.loads(event['body'])
+        else:
+            body = event['body']  
 
-        # Ensure all required fields are provided
-        for field in required_fields:
-            if field not in body:
-                return {
-                    'statusCode': 400,
-                    'body': json.dumps({'error': f'{field} is required'})
-                }
+       # Validate required fields
+        required_fields = ['restaurant_id', 'res_date', 'time', 'party_size']
+        missing_fields = [field for field in required_fields if field not in body]
+        if missing_fields:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': f'Missing fields: {", ".join(missing_fields)}'})
+            }
+
+         # Extract input fields
+        restaurant_id = body['restaurant_id']
+        res_date = body['res_date']
+        time = body['time']
+        party_size = int(body['party_size'])
+        
 
         # Forward the request to the SQS queue
-        sqs.send_message(
+        response = sqs.send_message(
             QueueUrl=QUEUE_URL,
             MessageBody=json.dumps({
                 'user_id': user_id,
-                'restaurant_id': body['restaurant_id'],
-                'res_date': body['res_date'],
-                'time': body['time'],
-                'party_size': int(body['party_size']),
+                'restaurant_id': restaurant_id,
+                'res_date': res_date,
+                'time': time,
+                'party_size': party_size,
             })
         )
+
+        logger.info(f"SQS Send Response: {response}")
 
         return {
             'statusCode': 200,

@@ -9,8 +9,11 @@ RESERVATION_TABLE = 'Reservation'
 
 def lambda_handler(event, context):
     try:
+        print('EVENT ', event)
+
         # Validate user authentication (Cognito JWT token)
         user_id = event['requestContext']['authorizer']['claims']['sub']
+        print('USER_ID ', user_id)
         if not user_id:
             return {
                 'statusCode': 401,
@@ -18,7 +21,11 @@ def lambda_handler(event, context):
             }
 
         # Parse input
-        body = json.loads(event['body'])
+        body = event['body']
+        if isinstance(body, str):
+            body = json.loads(body)  # Parse stringified JSON if needed
+        print('BODY: ', body)
+
         if 'reservation_id' not in body:
             return {
                 'statusCode': 400,
