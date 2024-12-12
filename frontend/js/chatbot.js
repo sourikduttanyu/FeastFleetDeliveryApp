@@ -101,8 +101,3 @@ userInput.addEventListener('keypress', (event) => {
         sendMessage();
     }
 });
-
-// Optional: Welcome message when chat loads
-document.addEventListener('DOMContentLoaded', () => {
-    addMessage('Welcome to Feast Fleet! How can I help you today?', 'bot-message');
-});
