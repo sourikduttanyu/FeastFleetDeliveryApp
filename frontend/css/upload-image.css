@@ -9,48 +9,6 @@ body {
     text-align: center;
 }
 
-/* Header */
-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background-color: #fff;
-    border-bottom: 1px solid #ccc;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-header h1 {
-    margin: 0;
-    color: #556B2F;
-    font-size: 22px;
-}
-
-header nav a {
-    margin: 0 8px;
-    font-size: 16px;
-    color: #333;
-    text-decoration: none;
-    transition: color 0.3s ease;
-}
-
-header nav a:hover {
-    color: #6B8E23;
-}
-
-header .basket {
-    background-color: #556B2F;
-    color: #fff;
-    padding: 8px 16px;
-    border-radius: 5px;
-    font-weight: bold;
-    text-decoration: none;
-}
-
-header .basket:hover {
-    background-color: #6B8E23;
-}
-
 /* Main Content */
 .content {
     margin: 40px auto;
