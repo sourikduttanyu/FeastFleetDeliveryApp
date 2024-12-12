@@ -1,32 +1,108 @@
-document.addEventListener('DOMContentLoaded', () => {
-    fetch('navbar.html')
-        .then(response => response.text())
-        .then(data => {
-            document.getElementById('navbar').innerHTML = data;
-        })
-        .catch(error => console.error('Error loading navbar:', error));
+// Initialize the API Gateway client
+const apigClient = apigClientFactory.newClient();
 
-    const messages = document.getElementById('messages');
-    const userInput = document.getElementById('userInput');
-    const sendMessage = document.getElementById('sendMessage');
+// Get DOM elements
+const messagesContainer = document.getElementById('messages');
+const userInput = document.getElementById('userInput');
+const sendMessageButton = document.getElementById('sendMessage');
 
-    sendMessage.addEventListener('click', () => {
-        const userMessage = userInput.value.trim();
-        if (userMessage) {
-            const userMessageElement = document.createElement('div');
-            userMessageElement.className = 'message user-message';
-            userMessageElement.textContent = userMessage;
-            messages.appendChild(userMessageElement);
-            userInput.value = '';
+// Function to add a message to the chat window
+function addMessage(message, type) {
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message', type);
+    messageElement.textContent = message;
+    messagesContainer.appendChild(messageElement);
+    
+    // Scroll to the bottom of the messages
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
 
-            // Simulate bot response
-            const botMessageElement = document.createElement('div');
-            botMessageElement.className = 'message bot-message';
-            botMessageElement.textContent = 'Thank you for your message! How can I assist you?';
-            messages.appendChild(botMessageElement);
-
-            // Scroll to the bottom
-            messages.scrollTop = messages.scrollHeight;
+// Function to send a message to the Lex chatbot via API Gateway
+async function sendMessage() {
+    const message = userInput.value.trim();
+    
+    // Check if message is not empty
+    if (!message) return;
+    
+    // Add user message to chat
+    addMessage(message, 'user-message');
+    
+    // Clear input
+    userInput.value = '';
+    
+    try {
+        const idToken = localStorage.getItem("idToken");
+        if (!idToken) {
+            alert("You need to log in to make a reservation.");
+            window.location.href = "login.html";
+            return;
         }
-    });
+
+        const userId = localStorage.getItem('userId');
+        
+        // Prepare the additional parameters with the authorization
+        const additionalParams = {
+            headers: {
+                'Authorization': idToken
+            }
+        };
+        
+        // Prepare the request body
+        const body = { 
+            message: message,
+            user_id: userId 
+        };
+        
+        // Send message to API Gateway
+        const response = await apigClient.chatbotPost({}, body, additionalParams);
+
+        console.log('RESPONSE', response);
+        
+        // Extract the Lex bot's response
+        const responseBody = JSON.parse(response.data.body);
+        const lexResponse = responseBody.messages[0].unstructured.text;
+        
+        // Add bot response to chat
+        addMessage(lexResponse, 'bot-message');
+    } catch (error) {
+        console.error('Full error:', error);
+        
+        // More detailed error handling
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            console.error('Error response:', error.response.data);
+            console.error('Status code:', error.response.status);
+            
+            if (error.response.status === 401) {
+                addMessage('Authorization failed. Please log in again.', 'bot-message');
+                // Redirect to login or refresh token
+                window.location.href = "login.html";
+            } else {
+                addMessage(`Sorry, there was an error: ${error.response.data.message || 'Unknown error'}`, 'bot-message');
+            }
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('No response received:', error.request);
+            addMessage('No response from server. Please check your connection.', 'bot-message');
+        } else {
+            // Something happened in setting up the request
+            console.error('Error setting up request:', error.message);
+            addMessage('An unexpected error occurred.', 'bot-message');
+        }
+    }
+}
+
+// Event listener for send button
+sendMessageButton.addEventListener('click', sendMessage);
+
+// Event listener for Enter key in input field
+userInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+});
+
+// Optional: Welcome message when chat loads
+document.addEventListener('DOMContentLoaded', () => {
+    addMessage('Welcome to Feast Fleet! How can I help you today?', 'bot-message');
 });
