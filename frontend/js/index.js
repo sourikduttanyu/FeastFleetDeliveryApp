@@ -38,6 +38,12 @@ document.addEventListener("DOMContentLoaded", () => {
      *                           "value" attribute (e.g. "Italian", "Chinese")
      *       location=<zip>    — the user-entered zip code
      *   - If no location is entered, prompts the user to supply one.
+     *
+     * NOTE: locationInput is declared below this forEach block, but because
+     * var/let/const inside a DOMContentLoaded callback are function-scoped to
+     * the arrow function, locationInput is accessible here via closure —
+     * the click handler only executes after DOMContentLoaded finishes, by
+     * which point locationInput has already been assigned.
      */
     document.querySelectorAll('.category').forEach(button => {
         button.addEventListener('click', () => {

@@ -1,3 +1,51 @@
+"""
+LF15 - SageMaker Image Processing Lambda (S3-Triggered)
+=========================================================
+AWS Services: S3 (trigger), SageMaker
+
+Purpose:
+    Triggered by an S3 PutObject event when a new food image is uploaded to
+    the food-images-s3 bucket. Downloads the image, invokes the SageMaker
+    ResNet-50 endpoint to classify it, and returns the top 5 predictions.
+
+    This Lambda is the async counterpart to LF14. While LF14 handles the
+    full upload-to-result pipeline inline, LF15 is designed to be triggered
+    by S3 events for decoupled, asynchronous image processing.
+
+    Pipeline:
+        1. Extract S3 bucket name and object key from the S3 event record
+        2. Download the image bytes from S3
+        3. Invoke SageMaker ResNet-50 endpoint with raw binary image
+        4. Parse the 1000-element probability vector from the response
+        5. Return the top 5 labels and their probabilities
+
+Event Structure (S3 Event Notification):
+    {
+        "Records": [{
+            "s3": {
+                "bucket": { "name": "food-images-s3" },
+                "object": { "key": "<uuid>.jpg" }
+            }
+        }]
+    }
+
+Returns:
+    HTTP 200 with a JSON body containing:
+        {
+            "message": "Image processed successfully!",
+            "predictions": [
+                { "label": "<label>", "probability": <float> },
+                ...  (top 5)
+            ]
+        }
+    HTTP 500 on any error.
+
+Note:
+    LABELS is the standard 1000-class ImageNet label list. The SageMaker
+    ResNet-50 model output is a softmax probability vector; each index maps
+    to the corresponding label in this list.
+"""
+
 import boto3
 import json
 import logging
@@ -1013,6 +1061,26 @@ LABELS = ["tench",
 "toilet paper"]
 
 def lambda_handler(event, context):
+    """
+    Main Lambda entry point for S3-triggered image classification.
+
+    Reads the S3 bucket and key from the event, downloads the image, sends
+    it to the SageMaker ResNet-50 endpoint, and returns the top 5 class
+    predictions with their probabilities.
+
+    The SageMaker endpoint accepts raw binary image data with content type
+    'application/x-image' and returns a JSON array of 1000 floats (softmax
+    probabilities over all ImageNet classes). The top 5 are selected by
+    sorting in descending order and slicing.
+
+    Args:
+        event (dict): S3 event notification containing Records[0].s3.bucket
+                      and Records[0].s3.object.key.
+        context (LambdaContext): AWS Lambda runtime context (unused).
+
+    Returns:
+        dict: Response with statusCode 200 and top 5 predictions, or 500 on error.
+    """
     try:
         # Log the incoming event
         logger.info("Event received: %s", json.dumps(event))

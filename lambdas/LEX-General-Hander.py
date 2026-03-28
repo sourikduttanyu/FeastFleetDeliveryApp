@@ -1,3 +1,51 @@
+"""
+LEX General Handler - AWS Lex V2 Chatbot Lambda
+================================================
+AWS Services: AWS Lex V2, DynamoDB, OpenSearch, Lambda (invokes LF7)
+
+Purpose:
+    Central fulfillment handler for the FeastFleet AI chatbot. Receives intent
+    events from AWS Lex V2 and routes them to the appropriate handler function.
+
+    Supported Intents:
+        - MainIntent:  Greets the user, asks if they want to order, then queries
+                       OpenSearch for the 10 nearest restaurants using the user's
+                       stored lat/lon coordinates.
+        - OrderIntent: Guides the user through a multi-turn dialog to select a
+                       restaurant, browse its menu, add items to their cart, and
+                       confirm and place the order via LF7.
+
+    Conversation Flow:
+        MainIntent
+            → ProceedOrder slot (yes/no)
+            → if yes: geo-query OpenSearch → transition to OrderIntent
+
+        OrderIntent
+            → RestaurantName slot
+            → ItemName slot (shows menu)
+            → Quantity slot
+            → AdditionalOrder slot (loop back for more items)
+            → OrderConfirmation slot (show summary)
+            → if confirmed: invoke LF7 synchronously to place order
+
+    Session State:
+        Lex session attributes are used as a lightweight server-side session to
+        persist state across turns: user_id, restaurant_id, menu (JSON), cart (JSON),
+        total_price, and waiting_for_item_name flag.
+
+Event Structure (Lex V2 invocation):
+    {
+        "sessionState": {
+            "intent": { "name": "...", "slots": { ... } },
+            "sessionAttributes": { "user_id": "...", ... }
+        },
+        "invocationSource": "DialogCodeHook" | "FulfillmentCodeHook"
+    }
+
+Returns:
+    A Lex V2 response dict with sessionState (dialogAction + intent) and messages.
+"""
+
 import json
 import logging
 import requests
@@ -45,6 +93,22 @@ def lambda_handler(event, context):
         return default_fallback_response(event, session_attributes)
 
 def decimal_default(obj):
+    """
+    JSON serialization helper for DynamoDB Decimal types.
+
+    boto3's DynamoDB resource returns numeric values as Python Decimal objects,
+    which are not natively JSON-serializable. Pass this as the 'default'
+    argument to json.dumps() to convert Decimals to floats on the fly.
+
+    Args:
+        obj: Any object encountered by the JSON encoder that it cannot serialize.
+
+    Returns:
+        float: The numeric value if obj is a Decimal.
+
+    Raises:
+        TypeError: If obj is not a Decimal (expected behavior for json.dumps).
+    """
     if isinstance(obj, Decimal):
         return float(obj)
     raise TypeError
@@ -377,6 +441,21 @@ def get_restaurant_id_by_name(restaurant_name):
         return None
 
 def initialize_cart(user_id):
+    """
+    Ensure a cart record exists in DynamoDB for the given user.
+
+    Performs a GetItem lookup on the Cart table. If a cart already exists,
+    returns its current items. If not, creates a new empty cart record via
+    put_item and returns an empty list. Used during the OrderIntent flow to
+    ensure the cart is ready before items are added.
+
+    Args:
+        user_id (str): The Cognito UUID of the authenticated user.
+
+    Returns:
+        list: The existing cart items if found, or an empty list if the cart
+              was just created or an error occurred.
+    """
     try:
         cart_table = dynamodb.Table("Cart")
         

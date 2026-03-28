@@ -1,3 +1,41 @@
+"""
+LF14 - Food Image Upload and Recognition Lambda
+================================================
+AWS Services: S3, SageMaker, OpenSearch, DynamoDB, SNS
+
+Purpose:
+    Accepts a base64-encoded food image from the frontend, uploads it to S3,
+    invokes a SageMaker ResNet-50 endpoint to classify the image, and then
+    queries OpenSearch to find restaurants that serve the identified dish.
+
+    Pipeline:
+        1. Decode base64 image from request body
+        2. Upload image to S3 (bucket: food-images-s3)
+        3. Re-read image from S3 and invoke SageMaker ResNet-50 endpoint
+        4. Map the highest-probability output index to the ImageNet LABELS list
+        5. Query OpenSearch menu_items_index for menu items matching the label
+        6. Resolve unique restaurant IDs from matching menu items
+        7. Fetch and return restaurant details from DynamoDB
+
+Event Structure (API Gateway Proxy Integration):
+    {
+        "body": "<base64-encoded image bytes>"
+    }
+
+Returns:
+    HTTP 200 with a JSON body containing:
+        {
+            "message": "Image uploaded successfully with key: <uuid>.jpg",
+            "restaurants": [ { "restaurant_id", "name", "address", "cuisine" }, ... ]
+        }
+    HTTP 500 on any error.
+
+Note:
+    LABELS is the standard 1000-class ImageNet label list used by ResNet-50.
+    The model returns a probability vector; the index of the max value maps
+    directly to the corresponding label in this list.
+"""
+
 import boto3
 import base64
 import uuid
@@ -1037,7 +1075,23 @@ LABELS = ["tench",
 
 
 def query_opensearch(index_name, query):
-    """Helper function to query OpenSearch."""
+    """
+    Execute a search query against an OpenSearch index.
+
+    Constructs the full endpoint URL from the host and index name, then
+    posts the query body using HTTP Basic Auth. Used here to search the
+    menu_items_index for dishes matching the SageMaker-predicted food label.
+
+    Args:
+        index_name (str): The OpenSearch index to query (e.g., 'menu_items_index').
+        query (dict): An OpenSearch DSL query body (e.g., a 'match' query).
+
+    Returns:
+        dict: The parsed JSON response from OpenSearch, including 'hits'.
+
+    Raises:
+        requests.exceptions.RequestException: On HTTP errors or connectivity issues.
+    """
     url = f"{OPENSEARCH_HOST}/{index_name}/_search"
     headers = {"Content-Type": "application/json"}
     auth = HTTPBasicAuth(OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD)  # Use basic authentication
@@ -1052,6 +1106,21 @@ def query_opensearch(index_name, query):
 
 
 def get_restaurants_by_ids(restaurant_ids):
+    """
+    Fetch a filtered subset of restaurant attributes from DynamoDB for a list of IDs.
+
+    Performs one GetItem call per restaurant ID (N+1 pattern). For each found
+    record, returns only the fields relevant to the frontend: restaurant_id,
+    name, address, and cuisine.
+
+    Args:
+        restaurant_ids (list[str]): List of restaurant UUID primary keys.
+
+    Returns:
+        list[dict]: A list of restaurant dicts with keys:
+                    restaurant_id, name, address, cuisine.
+                    IDs that are not found in DynamoDB are silently skipped.
+    """
     table = dynamodb.Table(RESTAURANT_TABLE_NAME)
     restaurants = []
 
@@ -1078,6 +1147,27 @@ def get_restaurants_by_ids(restaurant_ids):
 
 
 def lambda_handler(event, context):
+    """
+    Main Lambda entry point for food image recognition.
+
+    Orchestrates the full pipeline: base64 decode → S3 upload → SageMaker
+    inference → OpenSearch menu search → DynamoDB restaurant lookup.
+
+    The SageMaker ResNet-50 model returns a 1000-element probability vector.
+    The index of the maximum probability is mapped to the ImageNet LABELS list
+    to get the human-readable food label (e.g., 'pizza', 'cheeseburger').
+    That label is then used to search OpenSearch for matching menu items,
+    and the unique restaurant IDs from those hits are resolved to full
+    restaurant records from DynamoDB.
+
+    Args:
+        event (dict): API Gateway proxy event. 'body' contains the raw
+                      base64-encoded image bytes.
+        context (LambdaContext): AWS Lambda runtime context (unused).
+
+    Returns:
+        dict: API Gateway HTTP response with statusCode and JSON body.
+    """
     try:
         # Decode the incoming base64-encoded image
         body = event['body']
